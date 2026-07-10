@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<local:ChatMessageControlBase
+    x:Class="BiliCopilot.UI.Controls.Message.ChatSessionSideItem"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:base="using:Richasy.WinUIKernel.Share.Base"
+    xmlns:controls="using:BiliCopilot.UI.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="using:BiliCopilot.UI.Controls.Message"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid
+        Padding="0,8"
+        ColumnSpacing="12"
+        RowSpacing="4">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <Button
+            Grid.RowSpan="2"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            Command="{x:Bind ViewModel.ShowUserSpaceCommand, Mode=OneWay}"
+            Style="{StaticResource AvatarButtonStyle}">
+            <controls:BasicCoverImage
+                Width="36"
+                Height="36"
+                CornerRadius="18"
+                DecodeWidth="100"
+                Source="{x:Bind ViewModel.Avatar, Mode=OneWay}" />
+        </Button>
+
+        <Grid
+            Grid.Column="1"
+            HorizontalAlignment="Stretch"
+            ColumnSpacing="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <base:TrimTextBlock MaxLines="1" Text="{x:Bind ViewModel.UserName, Mode=OneWay}" />
+            <TextBlock
+                Grid.Column="1"
+                VerticalAlignment="Center"
+                Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                Style="{StaticResource CaptionTextBlockStyle}"
+                Text="{x:Bind ViewModel.LastMessageTime, Mode=OneWay}" />
+        </Grid>
+
+        <base:TrimTextBlock
+            Grid.Row="1"
+            Grid.Column="1"
+            FontSize="12"
+            Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+            MaxLines="1"
+            Text="{x:Bind ViewModel.LastMessage, Mode=OneWay}" />
+    </Grid>
+</local:ChatMessageControlBase>
