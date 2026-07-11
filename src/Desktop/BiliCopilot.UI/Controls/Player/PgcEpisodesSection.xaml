@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<local:PgcEpisodesSectionBase
+    x:Class="BiliCopilot.UI.Controls.Player.PgcEpisodesSection"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:base="using:Richasy.WinUIKernel.Share.Base"
+    xmlns:components="using:BiliCopilot.UI.Controls.Components"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:ext="using:BiliCopilot.UI.Extensions"
+    xmlns:items="using:BiliCopilot.UI.ViewModels.Items"
+    xmlns:local="using:BiliCopilot.UI.Controls.Player"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:repeater="using:Richasy.WinUIKernel.Share.Base.Repeater"
+    mc:Ignorable="d">
+
+    <UserControl.Resources>
+        <DataTemplate x:Name="DefaultTemplate" x:DataType="items:EpisodeItemViewModel">
+            <components:EpisodeCardControl Style="{StaticResource PlayerEpisodeCardStyle}" ViewModel="{x:Bind}" />
+        </DataTemplate>
+        <DataTemplate x:Name="IndexTemplate" x:DataType="items:EpisodeItemViewModel">
+            <base:AppToggleCard
+                Padding="0"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                HorizontalContentAlignment="Stretch"
+                VerticalContentAlignment="Stretch"
+                BorderBrush="Transparent"
+                BorderThickness="2"
+                Command="{x:Bind PlayCommand}"
+                IsChecked="{x:Bind IsSelected, Mode=OneWay}"
+                IsEnableCheck="False">
+                <Grid>
+                    <TextBlock
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        FontSize="14"
+                        FontWeight="Bold"
+                        Text="{x:Bind Index}" />
+                </Grid>
+            </base:AppToggleCard>
+        </DataTemplate>
+        <StackLayout x:Name="DefaultLayout" Spacing="8" />
+        <UniformGridLayout
+            x:Name="IndexLayout"
+            ItemsStretch="Fill"
+            MinColumnSpacing="8"
+            MinItemHeight="40"
+            MinItemWidth="36"
+            MinRowSpacing="8" />
+    </UserControl.Resources>
+
+    <Grid RowSpacing="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition />
+        </Grid.RowDefinitions>
+
+        <ToggleSwitch
+            Margin="12,8,12,0"
+            IsOn="{x:Bind ViewModel.OnlyIndex, Mode=TwoWay}"
+            OffContent="{ext:Locale Name=OnlyIndex}"
+            OnContent="{ext:Locale Name=OnlyIndex}"
+            Toggled="OnIndexToggledAsync" />
+
+        <Grid Grid.Row="1">
+            <ScrollView
+                x:Name="DefaultView"
+                Padding="12,0"
+                x:Load="{x:Bind ViewModel.OnlyIndex, Mode=OneWay, Converter={StaticResource ObjectToBoolReverseConverter}}">
+                <repeater:AppRepeater
+                    Margin="0,0,0,12"
+                    ItemTemplate="{StaticResource DefaultTemplate}"
+                    ItemsSource="{x:Bind ViewModel.Episodes, Mode=OneWay}"
+                    Layout="{StaticResource DefaultLayout}" />
+            </ScrollView>
+            <ScrollView
+                x:Name="IndexView"
+                Padding="12,0"
+                x:Load="{x:Bind ViewModel.OnlyIndex, Mode=OneWay}">
+                <repeater:AppRepeater
+                    Margin="0,0,0,12"
+                    ItemTemplate="{StaticResource IndexTemplate}"
+                    ItemsSource="{x:Bind ViewModel.Episodes, Mode=OneWay}"
+                    Layout="{StaticResource IndexLayout}" />
+            </ScrollView>
+        </Grid>
+    </Grid>
+</local:PgcEpisodesSectionBase>

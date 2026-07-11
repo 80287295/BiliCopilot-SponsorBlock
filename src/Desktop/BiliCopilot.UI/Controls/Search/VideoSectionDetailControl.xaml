@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<local:VideoSectionDetailControlBase
+    x:Class="BiliCopilot.UI.Controls.Search.VideoSectionDetailControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:base="using:Richasy.WinUIKernel.Share.Base"
+    xmlns:components="using:BiliCopilot.UI.Controls.Components"
+    xmlns:controls="using:BiliCopilot.UI.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:ext="using:BiliCopilot.UI.Extensions"
+    xmlns:items="using:BiliCopilot.UI.ViewModels.Items"
+    xmlns:local="using:BiliCopilot.UI.Controls.Search"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:repeater="using:Richasy.WinUIKernel.Share.Base.Repeater"
+    mc:Ignorable="d">
+
+    <Grid>
+        <controls:IncrementVerticalScrollControl x:Name="View" LoadMoreCommand="{x:Bind ViewModel.LoadItemsCommand, Mode=OneWay}">
+            <controls:IncrementVerticalScrollControl.Element>
+                <Grid Margin="0,16">
+                    <repeater:AppRepeater
+                        x:Name="VideoRepeater"
+                        ItemsSource="{x:Bind ViewModel.Items, Mode=OneWay}"
+                        Layout="{StaticResource VideoLayout}">
+                        <repeater:AppRepeater.ItemTemplate>
+                            <DataTemplate x:DataType="items:VideoItemViewModel">
+                                <components:VideoCardControl Style="{StaticResource SearchVideoCardStyle}" ViewModel="{x:Bind}" />
+                            </DataTemplate>
+                        </repeater:AppRepeater.ItemTemplate>
+                    </repeater:AppRepeater>
+                </Grid>
+            </controls:IncrementVerticalScrollControl.Element>
+        </controls:IncrementVerticalScrollControl>
+
+        <base:EmptyHolder
+            Description="{ext:Locale Name=NoSpecificData}"
+            Emoji="&#x1F39E;"
+            Visibility="{x:Bind ViewModel.IsEmpty, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}" />
+
+        <base:LoadingWidget Text="{ext:Locale Name=LoadingAndWait}" Visibility="{x:Bind ViewModel.IsLoading, Mode=OneWay}" />
+    </Grid>
+</local:VideoSectionDetailControlBase>
