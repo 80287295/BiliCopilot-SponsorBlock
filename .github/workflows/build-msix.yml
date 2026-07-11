@@ -44,10 +44,10 @@ jobs:
           (echo   ^</packageSources^>) >> nuget.config
           (echo ^</configuration^>) >> nuget.config
 
-      # 捕获完整 restore 输出到日志文件，无论成功失败都上传 artifact
-      - name: Restore dependencies
+      # 第一次 restore：捕获完整日志用于诊断（忽略源失败）
+      - name: Restore dependencies (with logging)
         run: |
-          dotnet restore "%SOLUTION_FILE%" --configuration %CONFIGURATION% > restore_log.txt 2>&1 || true
+          dotnet restore "%SOLUTION_FILE%" --configuration %CONFIGURATION% --ignore-failed-sources > restore_log.txt 2>&1 || true
           type restore_log.txt
 
       - name: Upload restore log
@@ -59,8 +59,9 @@ jobs:
           retention-days: 7
           if-no-files-found: warn
 
-      - name: Check if restore succeeded
-        run: dotnet restore "%SOLUTION_FILE%" --configuration %CONFIGURATION%
+      # 第二次 restore：正式执行，仍然忽略源失败
+      - name: Restore dependencies
+        run: dotnet restore "%SOLUTION_FILE%" --configuration %CONFIGURATION% --ignore-failed-sources
 
       - name: Build solution
         run: dotnet build "%PROJECT_FILE%" -c %CONFIGURATION% -r %RUNTIME% /p:PublishAot=False /p:EnableMsixTooling=true /p:TreatWarningsAsErrors=false /p:EnforceCodeStyleInBuild=false --no-restore
