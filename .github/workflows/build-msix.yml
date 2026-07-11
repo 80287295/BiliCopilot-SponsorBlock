@@ -34,23 +34,40 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
-      # nuget.config 包含需要认证的 Azure DevOps 私有源 (sergio)，
-      # CI 环境没有凭据，必须禁用它才能 restore 成功。
-      - name: Disable private NuGet source (CI has no credentials for sergio feed)
+      # ============================================================
+      # 关键修复：CI 环境完全替换 nuget.config
+      #
+      # 原始 nuget.config 包含多个 Azure DevOps 私有/半私有源：
+      #   - sergio   → 需要认证 (v2 feed, 无 token 必挂)
+      #   - labs.windows / community → Azure DevOps，CI 可能无法解析或超时
+      #   - dotnet9  → Azure DevOps dotnet9 preview feed
+      #
+      # 这些源在 CI 中全部不可靠。直接替换为只保留 nuget.org 公共源，
+      # 所有依赖包（包括 Richasy.* 系列）都能从 nuget.org 获取。
+      # ============================================================
+      - name: Replace nuget.config with CI-safe version (public nuget.org only)
         run: |
-          $config = Get-Content nuget.config -Raw
-          $config = $config -replace '<add key="sergio"(.+?)/>', '<!-- disabled in CI: sergio source requires auth -->'
-          Set-Content nuget.config -Value $config -Encoding UTF8
+          $ciConfig = @'
+          <?xml version="1.0" encoding="utf-8"?>
+          <configuration>
+            <packageSources>
+              <clear />
+              <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+            </packageSources>
+            <disabledPackageSources>
+              <clear />
+            </disabledPackageSources>
+          </configuration>
+          '@
+          Set-Content nuget.config -Value $ciConfig -Encoding UTF8
+          Write-Host "✅ Replaced nuget.config with public-only sources"
 
-      # 用 sln 级别 restore，确保所有依赖项都拉取完整；
-      # 加 --ignore-failed-sources 防止私有源超时导致整个 restore 失败。
       - name: Restore dependencies
         run: dotnet restore "$env:SOLUTION_FILE" `
-          --configuration $env:CONFIGURATION `
-          --ignore-failed-sources
+          --configuration $env:CONFIGURATION
 
       # CI 环境下放宽 warning 策略：
-      # TreatWarningsAsErrors=false — 避免 CI 特有的 warning（如 ILxxxx 裁剪警告）导致 build fail
+      # TreatWarningsAsErrors=false — 避免 CI 特有的 warning 导致 build fail
       # EnforceCodeStyleInBuild=false — CI 编译器版本/环境差异可能触发额外 style warning
       - name: Build solution
         run: |
