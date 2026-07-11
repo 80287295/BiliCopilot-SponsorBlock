@@ -33,37 +33,33 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
-      # 用最简单的方式重写 nuget.config（cmd echo）
-      - name: Override NuGet config for CI
+      # 用 PowerShell 写一个干净的 CI 专用 nuget.config（只保留 nuget.org 公共源）
+      # 原始 nuget.config 包含 Azure DevOps 私有源，CI 环境没有访问凭证
+      - name: Write clean NuGet config for CI
+        shell: pwsh
         run: |
-          (echo ^<?xml version="1.0" encoding="utf-8"?^>) > nuget.config
-          (echo ^<configuration^>) >> nuget.config
-          (echo   ^<packageSources^>) >> nuget.config
-          (echo     ^<clear /^>) >> nuget.config
-          (echo     ^<add key="nuget.org" value="https://api.nuget.org/v3/index.json" /^>) >> nuget.config
-          (echo   ^</packageSources^>) >> nuget.config
-          (echo ^</configuration^>) >> nuget.config
+          $nugetConfig = @'
+          <?xml version="1.0" encoding="utf-8"?>
+          <configuration>
+            <packageSources>
+              <clear />
+              <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+            </packageSources>
+          </configuration>
+          '@
+          # 备份原始配置（调试用）
+          if (Test-Path nuget.config) { Copy-Item nuget.config nuget.config.orig }
+          Set-Content -Path nuget.config -Value $nugetConfig -Encoding UTF8
+          Write-Host "=== Written nuget.config ==="
+          Get-Content nuget.config
 
-      # 第一次 restore：捕获详细日志用于诊断
-      - name: Restore dependencies (diagnostic logging)
-        run: |
-          dotnet restore "%SOLUTION_FILE%" --configuration %CONFIGURATION% --ignore-failed-sources --verbosity detailed > restore_log.txt 2>&1 || echo "Restore exited with code: %ERRORLEVEL%"
-          type restore_log.txt
-          echo ====
-          echo Restore error level: %ERRORLEVEL%
-
-      - name: Upload restore log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: restore-log
-          path: restore_log.txt
-          retention-days: 7
-          if-no-files-found: warn
-
-      # 第二次 restore：正式执行（带详细输出）
+      # Restore dependencies
       - name: Restore dependencies
-        run: dotnet restore "%SOLUTION_FILE%" --configuration %CONFIGURATION% --ignore-failed-sources --verbosity normal
+        run: |
+          dotnet restore "%SOLUTION_FILE%" --configfile nuget.config --configuration %CONFIGURATION% --ignore-failed-sources --verbosity normal
+        env:
+          DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+          DOTNET_CLI_TELEMETRY_OPTOUT: true
 
       - name: Build solution
         run: dotnet build "%PROJECT_FILE%" -c %CONFIGURATION% -r %RUNTIME% /p:PublishAot=False /p:EnableMsixTooling=true /p:TreatWarningsAsErrors=false /p:EnforceCodeStyleInBuild=false --no-restore
