@@ -33,28 +33,29 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
-      - name: Check .NET and tooling info
+      # Override nuget.config for CI: only use nuget.org
+      # All required packages (including CommunityToolkit, ComputeSharp, Richasy.*)
+      # are available on nuget.org. Azure DevOps feeds (labs.windows, community, dotnet9)
+      # can be unreachable from GitHub Actions runners.
+      - name: Use CI-friendly NuGet config (nuget.org only)
         shell: bash
         run: |
-          echo "=== .NET SDK Version ==="
-          dotnet --version
-          echo "=== .NET SDKs installed ==="
-          dotnet --list-sdks
-          echo "=== .NET Runtimes ==="
-          dotnet --list-runtimes
-          echo "=== Working directory ==="
-          pwd
-          echo "=== LS root ==="
-          ls -la
+          cat > nuget.config << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <configuration>
+            <packageSources>
+              <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+            </packageSources>
+          </configuration>
+          EOF
+          echo "=== CI nuget.config ==="
+          cat nuget.config
 
-      # Restore dependencies
-      # Note: sergio private source has been removed from nuget.config;
-      # all packages (including ComputeSharp, Richasy.*) are available on nuget.org
       - name: Restore dependencies
         shell: bash
         run: |
           dotnet restore "$SOLUTION_FILE" --configuration "$CONFIGURATION" --verbosity normal 2>&1 | tee restore_output.txt
-          echo "=== EXIT CODE: $? ==="
+          echo "RESTORE_EXIT_CODE=$?"
         env:
           DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
           DOTNET_CLI_TELEMETRY_OPTOUT: true
