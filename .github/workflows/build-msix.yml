@@ -33,12 +33,12 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
-      # 用 PowerShell 写一个干净的 CI 专用 nuget.config（只保留 nuget.org 公共源）
+      # 用 cat heredoc 写干净的 CI 专用 nuget.config（只保留 nuget.org 公共源）
       # 原始 nuget.config 包含 Azure DevOps 私有源，CI 环境没有访问凭证
       - name: Write clean NuGet config for CI
-        shell: pwsh
+        shell: bash
         run: |
-          $nugetConfig = @'
+          cat > nuget.config << 'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <configuration>
             <packageSources>
@@ -46,26 +46,26 @@ jobs:
               <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
             </packageSources>
           </configuration>
-          '@
-          # 备份原始配置（调试用）
-          if (Test-Path nuget.config) { Copy-Item nuget.config nuget.config.orig }
-          Set-Content -Path nuget.config -Value $nugetConfig -Encoding UTF8
-          Write-Host "=== Written nuget.config ==="
-          Get-Content nuget.config
+          EOF
+          echo "=== Written nuget.config ==="
+          cat nuget.config
 
       # Restore dependencies
       - name: Restore dependencies
+        shell: bash
         run: |
-          dotnet restore "%SOLUTION_FILE%" --configfile nuget.config --configuration %CONFIGURATION% --ignore-failed-sources --verbosity normal
+          dotnet restore "$SOLUTION_FILE" --configfile nuget.config --configuration "$CONFIGURATION" --ignore-failed-sources --verbosity normal
         env:
           DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
           DOTNET_CLI_TELEMETRY_OPTOUT: true
 
       - name: Build solution
-        run: dotnet build "%PROJECT_FILE%" -c %CONFIGURATION% -r %RUNTIME% /p:PublishAot=False /p:EnableMsixTooling=true /p:TreatWarningsAsErrors=false /p:EnforceCodeStyleInBuild=false --no-restore
+        shell: bash
+        run: dotnet build "$PROJECT_FILE" -c "$CONFIGURATION" -r "$RUNTIME" /p:PublishAot=False /p:EnableMsixTooling=true /p:TreatWarningsAsErrors=false /p:EnforceCodeStyleInBuild=false --no-restore
 
       - name: Publish MSIX package
-        run: dotnet publish "%PROJECT_FILE%" -c %CONFIGURATION% -r %RUNTIME% /p:PublishAot=False /p:EnableMsixTooling=true /p:TreatWarningsAsErrors=false /p:AppxPackageBuildingBlock=Store /p:AppxBundlePlatforms=x64 /p:AppxBundle=Always --self-contained -o ./publish_output
+        shell: bash
+        run: dotnet publish "$PROJECT_FILE" -c "$CONFIGURATION" -r "$RUNTIME" /p:PublishAot=False /p:EnableMsixTooling=true /p:TreatWarningsAsErrors=false /p:AppxPackageBuildingBlock=Store /p:AppxBundlePlatforms=x64 /p:AppxBundle=Always --self-contained -o ./publish_output
 
       - name: Upload MSIX artifacts
         uses: actions/upload-artifact@v4
@@ -80,4 +80,5 @@ jobs:
 
       - name: Show output structure
         if: always()
-        run: tree /f publish_output || dir /s /b publish_output
+        shell: bash
+        run: find publish_output -type f 2>/dev/null || echo "No output directory"
