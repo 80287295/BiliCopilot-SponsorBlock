@@ -44,11 +44,13 @@ jobs:
           (echo   ^</packageSources^>) >> nuget.config
           (echo ^</configuration^>) >> nuget.config
 
-      # 第一次 restore：捕获完整日志用于诊断（忽略源失败）
-      - name: Restore dependencies (with logging)
+      # 第一次 restore：捕获详细日志用于诊断
+      - name: Restore dependencies (diagnostic logging)
         run: |
-          dotnet restore "%SOLUTION_FILE%" --configuration %CONFIGURATION% --ignore-failed-sources > restore_log.txt 2>&1 || true
+          dotnet restore "%SOLUTION_FILE%" --configuration %CONFIGURATION% --ignore-failed-sources --verbosity detailed > restore_log.txt 2>&1 || echo "Restore exited with code: %ERRORLEVEL%"
           type restore_log.txt
+          echo ====
+          echo Restore error level: %ERRORLEVEL%
 
       - name: Upload restore log
         if: always()
@@ -59,9 +61,9 @@ jobs:
           retention-days: 7
           if-no-files-found: warn
 
-      # 第二次 restore：正式执行，仍然忽略源失败
+      # 第二次 restore：正式执行（带详细输出）
       - name: Restore dependencies
-        run: dotnet restore "%SOLUTION_FILE%" --configuration %CONFIGURATION% --ignore-failed-sources
+        run: dotnet restore "%SOLUTION_FILE%" --configuration %CONFIGURATION% --ignore-failed-sources --verbosity normal
 
       - name: Build solution
         run: dotnet build "%PROJECT_FILE%" -c %CONFIGURATION% -r %RUNTIME% /p:PublishAot=False /p:EnableMsixTooling=true /p:TreatWarningsAsErrors=false /p:EnforceCodeStyleInBuild=false --no-restore
