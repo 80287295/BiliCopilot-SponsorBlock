@@ -14,29 +14,68 @@ on:
 
 env:
   PROJECT_FILE: src/Desktop/BiliCopilot.UI/BiliCopilot.UI.csproj
+  SOLUTION_FILE: src/Bili.Copilot.sln
   CONFIGURATION: Release
   RUNTIME: win-x64
 
 jobs:
   build:
     runs-on: windows-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-dotnet@v4
+      # Bili.Copilot 使用 .NET 9 (Windows App SDK 1.5+)
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'
 
-      - name: Restore dependencies
-        run: dotnet restore $env:PROJECT_FILE --configurations $env:CONFIGURATION
+      # nuget.config 包含需要认证的 Azure DevOps 私有源 (sergio)，
+      # CI 环境没有凭据，必须禁用它才能 restore 成功。
+      - name: Disable private NuGet source (CI has no credentials for sergio feed)
+        run: |
+          $config = Get-Content nuget.config -Raw
+          $config = $config -replace '<add key="sergio"(.+?)/>', '<!-- disabled in CI: sergio source requires auth -->'
+          Set-Content nuget.config -Value $config -Encoding UTF8
 
+      # 用 sln 级别 restore，确保所有依赖项都拉取完整；
+      # 加 --ignore-failed-sources 防止私有源超时导致整个 restore 失败。
+      - name: Restore dependencies
+        run: dotnet restore "$env:SOLUTION_FILE" `
+          --configuration $env:CONFIGURATION `
+          --ignore-failed-sources
+
+      # CI 环境下放宽 warning 策略：
+      # TreatWarningsAsErrors=false — 避免 CI 特有的 warning（如 ILxxxx 裁剪警告）导致 build fail
+      # EnforceCodeStyleInBuild=false — CI 编译器版本/环境差异可能触发额外 style warning
       - name: Build solution
-        run: dotnet build $env:PROJECT_FILE -c $env:CONFIGURATION -r $env:RUNTIME /p:PublishAot=False /p:EnableMsixTooling=true --no-restore
+        run: |
+          dotnet build "$env:PROJECT_FILE" `
+            -c $env:CONFIGURATION `
+            -r $env:RUNTIME `
+            /p:PublishAot=False `
+            /p:EnableMsixTooling=true `
+            /p:TreatWarningsAsErrors=false `
+            /p:EnforceCodeStyleInBuild=false `
+            --no-restore
 
       - name: Publish MSIX package
-        run: dotnet publish $env:PROJECT_FILE -c $env:CONFIGURATION -r $env:RUNTIME /p:PublishAot=False /p:EnableMsixTooling=true --self-contained -o ./publish_output
+        run: |
+          dotnet publish "$env:PROJECT_FILE" `
+            -c $env:CONFIGURATION `
+            -r $env:RUNTIME `
+            /p:PublishAot=False `
+            /p:EnableMsixTooling=true `
+            /p:TreatWarningsAsErrors=false `
+            /p:AppxPackageBuildingBlock=Store `
+            /p:AppxBundlePlatforms=x64 `
+            /p:AppxBundle=Always `
+            --self-contained `
+            -o ./publish_output
 
       - name: Upload MSIX artifacts
         uses: actions/upload-artifact@v4
@@ -45,5 +84,10 @@ jobs:
           path: |
             publish_output/**/*.msix
             publish_output/**/*.msixbundle
+            publish_output/**/*.appxupload
           retention-days: 30
           if-no-files-found: warn
+
+      - name: Show output structure
+        if: always()
+        run: tree /f publish_output || dir /s /b publish_output
