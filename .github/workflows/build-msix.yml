@@ -33,8 +33,7 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
-      # 直接重写 nuget.config（用最简单的 cmd echo 方式，避免 PowerShell 语法陷阱）
-      # 项目自带的 nuget.config 包含多个 Azure DevOps 源，CI 环境不可用
+      # 用最简单的方式重写 nuget.config（cmd echo）
       - name: Override NuGet config for CI
         run: |
           (echo ^<?xml version="1.0" encoding="utf-8"?^>) > nuget.config
@@ -44,9 +43,23 @@ jobs:
           (echo     ^<add key="nuget.org" value="https://api.nuget.org/v3/index.json" /^>) >> nuget.config
           (echo   ^</packageSources^>) >> nuget.config
           (echo ^</configuration^>) >> nuget.config
-          type nuget.config
 
+      # 捕获完整 restore 输出到日志文件，无论成功失败都上传 artifact
       - name: Restore dependencies
+        run: |
+          dotnet restore "%SOLUTION_FILE%" --configuration %CONFIGURATION% > restore_log.txt 2>&1 || true
+          type restore_log.txt
+
+      - name: Upload restore log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: restore-log
+          path: restore_log.txt
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Check if restore succeeded
         run: dotnet restore "%SOLUTION_FILE%" --configuration %CONFIGURATION%
 
       - name: Build solution
