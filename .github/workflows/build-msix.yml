@@ -47,36 +47,17 @@ jobs:
           echo "=== LS root ==="
           ls -la
 
-      # 用 cat heredoc 写干净的 CI 专用 nuget.config（只保留 nuget.org 公共源）
-      # 原始 nuget.config 包含 Azure DevOps 私有源，CI 环境没有访问凭证
-      - name: Write clean NuGet config for CI
-        shell: bash
-        run: |
-          cat > nuget.config << 'EOF'
-          <?xml version="1.0" encoding="utf-8"?>
-          <configuration>
-            <packageSources>
-              <clear />
-              <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
-            </packageSources>
-          </configuration>
-          EOF
-          echo "=== Written nuget.config ==="
-          cat nuget.config
-
-      # Restore dependencies (with full diagnostics)
+      # Restore dependencies
+      # Note: sergio private source has been removed from nuget.config;
+      # all packages (including ComputeSharp, Richasy.*) are available on nuget.org
       - name: Restore dependencies
         shell: bash
         run: |
-          dotnet restore "$SOLUTION_FILE" --configfile nuget.config --configuration "$CONFIGURATION" --ignore-failed-sources --verbosity detailed 2>&1 | tee restore_output.txt
+          dotnet restore "$SOLUTION_FILE" --configuration "$CONFIGURATION" --verbosity normal 2>&1 | tee restore_output.txt
           echo "=== EXIT CODE: $? ==="
         env:
           DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
           DOTNET_CLI_TELEMETRY_OPTOUT: true
-          NUGET_ENABLE_EXPERIMENTAL_HTTP_RETRY: true
-          NUGET_HTTP_CACHE_TIMEOUT: 600
-          NUGET_RETRIES_MAX_ATTEMPTS: 5
-          NUGET_RETRY_DELAY_MILLISECONDS: 2000
 
       - name: Upload restore output log
         if: always()
