@@ -1,0 +1,49 @@
+name: Build MSIX Package
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'assets/**'
+      - 'LICENSE'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  PROJECT_FILE: src/Desktop/BiliCopilot.UI/BiliCopilot.UI.csproj
+  CONFIGURATION: Release
+  RUNTIME: win-x64
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore $env:PROJECT_FILE --configurations $env:CONFIGURATION
+
+      - name: Build solution
+        run: dotnet build $env:PROJECT_FILE -c $env:CONFIGURATION -r $env:RUNTIME /p:PublishAot=False /p:EnableMsixTooling=true --no-restore
+
+      - name: Publish MSIX package
+        run: dotnet publish $env:PROJECT_FILE -c $env:CONFIGURATION -r $env:RUNTIME /p:PublishAot=False /p:EnableMsixTooling=true --self-contained -o ./publish_output
+
+      - name: Upload MSIX artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: MSIX-Package-win-x64-Release
+          path: |
+            publish_output/**/*.msix
+            publish_output/**/*.msixbundle
+          retention-days: 30
+          if-no-files-found: warn
