@@ -4,8 +4,8 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="ColorCode.WinUI" Version="2.0.15" />
-    <PackageVersion Include="CommunityToolkit.Labs.WinUI.SegmentedControl" Version="0.1.230830" />
-    <PackageVersion Include="CommunityToolkit.Labs.WinUI.Shimmer" Version="0.1.240801-build.1708" />
+    <!-- REMOVED: CommunityToolkit.Labs.WinUI.SegmentedControl (0.1.230830) - not on nuget.org, merged into CommunityToolkit.WinUI.Controls.Segmented -->
+    <!-- REMOVED: CommunityToolkit.Labs.WinUI.Shimmer (0.1.240801-build.1708) - not on nuget.org, was experimental preview -->
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.2.2" />
     <PackageVersion Include="CommunityToolkit.WinUI.Animations" Version="8.0.240109" />
     <PackageVersion Include="CommunityToolkit.WinUI.Controls.Primitives" Version="8.2.250402" />
