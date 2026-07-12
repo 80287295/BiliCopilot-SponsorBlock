@@ -572,6 +572,29 @@
                                     </MenuFlyout>
                                 </Button.Flyout>
                             </Button>
+                            <!-- 空降助手开关 -->
+                            <StackPanel
+                                Margin="12,0,0,0"
+                                VerticalAlignment="Center"
+                                Orientation="Horizontal"
+                                Spacing="6"
+                                ToolTipService.ToolTip="{ext:Locale Name=SponsorBlock}">
+                                <ic:SymbolIcon
+                                    VerticalAlignment="Center"
+                                    FontSize="14"
+                                    Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                                    Symbol="FlashAuto" />
+                                <ToggleSwitch
+                                    MinWidth="0"
+                                    MinHeight="0"
+                                    Margin="0"
+                                    Padding="0"
+                                    VerticalAlignment="Center"
+                                    IsOn="{x:Bind ViewModel.IsSponsorBlockEnabled, Mode=TwoWay}"
+                                    OffContent=""
+                                    OnContent=""
+                                    Style="{StaticResource DefaultToggleSwitchStyle}" />
+                            </StackPanel>
                             <Button
                                 Height="32"
                                 Margin="20,0,0,0"

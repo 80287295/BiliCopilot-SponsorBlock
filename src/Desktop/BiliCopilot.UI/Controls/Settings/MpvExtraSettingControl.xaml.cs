@@ -120,4 +120,13 @@ public sealed partial class MpvExtraSettingControl : SettingsPageControlBase
 
         ViewModel.MaxBackCacheSize = (int)args.NewValue;
     }
+
+    private async void OnExternalMpvPathButtonClick(object sender, RoutedEventArgs e)
+    {
+        var file = await this.Get<IFileToolkit>().PickFileAsync(".exe", this.Get<AppViewModel>().ActivatedWindow);
+        if (file is not null)
+        {
+            ViewModel.ExternalMpvPath = file.Path;
+        }
+    }
 }

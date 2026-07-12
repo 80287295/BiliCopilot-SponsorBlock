@@ -9,8 +9,8 @@ SetLayeredWindowAttributes
 ShowWindow
 UpdateWindow
 SetParent
-SetWindowLongPtrW
-GetWindowLongPtrW
+SetWindowLong
+GetWindowLong
 SetWindowPos
 DestroyWindow
 MoveWindow

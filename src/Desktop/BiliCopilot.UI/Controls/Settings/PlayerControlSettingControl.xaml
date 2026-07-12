@@ -16,6 +16,7 @@
     <UserControl.Resources>
         <converters:PreferCodecTypeConverter x:Key="PreferCodecConverter" />
         <converters:MTCBehaviorConverter x:Key="MTCConverter" />
+        <converters:ExternalPlayerTypeConverter x:Key="ExternalPlayerTypeConverter" />
     </UserControl.Resources>
 
     <base:SettingsExpander Description="{ext:Locale Name=PlayerControlDescription}" Header="{ext:Locale Name=PlayerControl}">
@@ -73,6 +74,21 @@
             </base:SettingsCard>
             <base:SettingsCard Description="{ext:Locale Name=GlobalPlaybackRateDescription}" Header="{ext:Locale Name=GlobalPlaybackRate}">
                 <ToggleSwitch IsOn="{x:Bind ViewModel.GlobalPlayerSpeed, Mode=TwoWay}" />
+            </base:SettingsCard>
+            <base:SettingsCard Description="{ext:Locale Name=ExternalPlayerTypeDescription}" Header="{ext:Locale Name=ExternalPlayerType}">
+                <ComboBox
+                    MinWidth="120"
+                    ItemsSource="{x:Bind ViewModel.ExternalPlayerTypeCollection, Mode=OneWay}"
+                    SelectedItem="{x:Bind ViewModel.ExternalPlayer, Mode=TwoWay}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="constants:ExternalPlayerType">
+                            <TextBlock Text="{x:Bind Converter={StaticResource ExternalPlayerTypeConverter}}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </base:SettingsCard>
+            <base:SettingsCard Description="{ext:Locale Name=UseExternalMpvDescription}" Header="{ext:Locale Name=UseExternalMpv}">
+                <ToggleSwitch IsOn="{x:Bind ViewModel.UseExternalMpv, Mode=TwoWay}" />
             </base:SettingsCard>
             <base:SettingsCard Description="{ext:Locale Name=BottomProgressVisibleDescription}" Header="{ext:Locale Name=BottomProgressVisible}">
                 <ToggleSwitch IsOn="{x:Bind ViewModel.BottomProgressVisible, Mode=TwoWay}" />

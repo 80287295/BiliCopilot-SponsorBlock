@@ -250,6 +250,15 @@ public sealed partial class SettingsPageViewModel
     [ObservableProperty]
     public partial bool AutoSkipSponsor { get; set; }
 
+    [ObservableProperty]
+    private ExternalPlayerType _externalPlayer;
+
+    [ObservableProperty]
+    private bool _useExternalMpv;
+
+    [ObservableProperty]
+    private string? _externalMpvPath;
+
     /// <summary>
     /// GPU设备列表.
     /// </summary>

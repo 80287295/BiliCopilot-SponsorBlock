@@ -30,6 +30,7 @@ public enum SponsorCategory
     /// <summary>
     /// 高亮时刻.
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1707:Identifiers should not contain underscores", Justification = "SponsorBlock API standard category name.")]
     POI_Highlight,
 
     /// <summary>
@@ -60,6 +61,7 @@ public enum SponsorCategory
     /// <summary>
     /// 无关音乐.
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1707:Identifiers should not contain underscores", Justification = "SponsorBlock API standard category name.")]
     Music_Offtopic,
 
     /// <summary>

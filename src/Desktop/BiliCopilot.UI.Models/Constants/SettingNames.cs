@@ -135,6 +135,7 @@ public enum SettingNames
     StepForwardSecond,
     IsDanmakuEnabled,
     UseExternalMpv,
+    ExternalMpvPath,
     FirstOpenMpvEditor,
     DanmakuRenderer,
     D3D11AdapterName,

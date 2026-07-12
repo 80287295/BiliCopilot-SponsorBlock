@@ -110,6 +110,10 @@ public sealed partial class SettingsPageViewModel : AISettingsViewModelBase
         ShowSearchRecommend = SettingsToolkit.ReadLocalSetting(SettingNames.ShowSearchRecommend, false);
         IsSponsorBlockEnabled = SettingsToolkit.ReadLocalSetting(SettingNames.SponsorBlockEnabled, true);
         AutoSkipSponsor = SettingsToolkit.ReadLocalSetting(SettingNames.AutoSkipSponsor, true);
+        ExternalPlayerTypeCollection = Enum.GetValues<ExternalPlayerType>().ToList();
+        ExternalPlayer = SettingsToolkit.ReadLocalSetting(SettingNames.ExternalPlayer, ExternalPlayerType.Mpv);
+        UseExternalMpv = SettingsToolkit.ReadLocalSetting(SettingNames.UseExternalMpv, false);
+        ExternalMpvPath = SettingsToolkit.ReadLocalSetting(SettingNames.ExternalMpvPath, string.Empty);
 
         ScreenshotAction = SettingsToolkit.ReadLocalSetting(SettingNames.ScreenshotAction, ScreenshotAction.Open);
         var customScreenshotFolderPath = SettingsToolkit.ReadLocalSetting(SettingNames.CustomScreenshotFolderPath, string.Empty);
@@ -562,4 +566,13 @@ public sealed partial class SettingsPageViewModel : AISettingsViewModelBase
 
     partial void OnAutoSkipSponsorChanged(bool value)
         => SettingsToolkit.WriteLocalSetting(SettingNames.AutoSkipSponsor, value);
+
+    partial void OnExternalPlayerChanged(ExternalPlayerType value)
+        => SettingsToolkit.WriteLocalSetting(SettingNames.ExternalPlayer, value);
+
+    partial void OnUseExternalMpvChanged(bool value)
+        => SettingsToolkit.WriteLocalSetting(SettingNames.UseExternalMpv, value);
+
+    partial void OnExternalMpvPathChanged(string? value)
+        => SettingsToolkit.WriteLocalSetting(SettingNames.ExternalMpvPath, value ?? string.Empty);
 }

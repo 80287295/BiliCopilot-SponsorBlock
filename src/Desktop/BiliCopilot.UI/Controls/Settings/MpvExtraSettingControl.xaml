@@ -170,6 +170,21 @@
                     SpinButtonPlacementMode="Compact"
                     ValueChanged="OnMaxVolumeChanged" />
             </base:SettingsCard>
+            <base:SettingsCard
+                x:Name="ExternalMpvPath"
+                Description="{ext:Locale Name=ExternalMpvPathDescription}"
+                Header="{ext:Locale Name=ExternalMpvPath}"
+                IsEnabled="{x:Bind ViewModel.UseExternalMpv, Mode=OneWay}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBox
+                        x:Name="ExternalMpvPathTextBox"
+                        MinWidth="200"
+                        IsReadOnly="True"
+                        PlaceholderText="mpv.exe"
+                        Text="{x:Bind ViewModel.ExternalMpvPath, Mode=TwoWay}" />
+                    <Button Click="OnExternalMpvPathButtonClick" Content="{ext:Locale Name=PickMpvFile}" />
+                </StackPanel>
+            </base:SettingsCard>
         </base:SettingsExpander.Items>
     </base:SettingsExpander>
 </local:SettingsPageControlBase>

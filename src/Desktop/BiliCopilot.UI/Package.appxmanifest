@@ -12,7 +12,7 @@
   <Identity
     Name="Richasy.BiliCopilot.Dev"
     Publisher="CN=Richasy"
-    Version="1.0.1.0" />
+    Version="1.1.0.0" />
 
   <mp:PhoneIdentity PhoneProductId="db73c7b4-f2cf-4fdc-96e5-a386308a42e9" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 

@@ -26,6 +26,83 @@ public class ResourceGenerator : IIncrementalGenerator
         });
     }
 
+    /// <summary>
+    /// Escapes text to be safe inside an XML doc comment (/// &lt;summary&gt;).
+    /// Handles: &amp;, &lt;, &gt;, double hyphen sequences, and leading/trailing hyphens.
+    /// </summary>
+    private static string EscapeForXmlComment(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return string.Empty;
+
+        var sb = new StringBuilder(value.Length);
+        for (int i = 0; i < value.Length; i++)
+        {
+            char c = value[i];
+            switch (c)
+            {
+                case '&':
+                    sb.Append("&amp;");
+                    break;
+                case '<':
+                    sb.Append("&lt;");
+                    break;
+                case '>':
+                    sb.Append("&gt;");
+                    break;
+                case '-':
+                    // Prevent '--' which is illegal in XML comments
+                    // Also prevent starting or ending with '-' which can be problematic
+                    if (i + 1 < value.Length && value[i + 1] == '-')
+                    {
+                        // Replace the first hyphen with its Unicode lookalike (hyphen U+2010)
+                        sb.Append('\u2010');
+                        // Skip the next hyphen — it's safe as a single one
+                        // but we still need to check it in the next iteration won't happen
+                        // since we consume it here. However we should also check if there's a third.
+                        i++; // skip second hyphen
+                        // Check for third consecutive hyphen
+                        if (i + 1 < value.Length && value[i + 1] == '-')
+                        {
+                            sb.Append('\u2010');
+                            i++;
+                        }
+                    }
+                    else if (sb.Length == 0 || EndsWithHyphenLikeChar(sb))
+                    {
+                        // Don't start a "word" segment that could form -- with previous content
+                        // But single leading hyphens in things like "- 下载" are OK in practice,
+                        // they don't form -- unless preceded by another hyphen
+                        sb.Append('-');
+                    }
+                    else
+                    {
+                        sb.Append('-');
+                    }
+                    break;
+                default:
+                    sb.Append(c);
+                    break;
+            }
+        }
+
+        // Final safety pass: ensure result doesn't start or end with --
+        var result = sb.ToString();
+        while (result.StartsWith("--"))
+            result = "\u2010" + result.Substring(2);
+        while (result.EndsWith("--"))
+            result = result.Substring(0, result.Length - 2) + "\u2010";
+
+        return result;
+    }
+
+    private static bool EndsWithHyphenLikeChar(StringBuilder sb)
+    {
+        if (sb.Length == 0) return false;
+        char last = sb[sb.Length - 1];
+        return last == '-' || last == '\u2010';
+    }
+
     private static void ProcessResourceFile(string content, SourceProductionContext context)
     {
         var xml = new XmlDocument();
@@ -35,7 +112,6 @@ public class ResourceGenerator : IIncrementalGenerator
         }
         catch (Exception)
         {
-            // Show the warning if no resource files are found
             var desc = new DiagnosticDescriptor(
                         "RESW0002",
                         "Failed to load .resw file",
@@ -61,24 +137,29 @@ public class ResourceGenerator : IIncrementalGenerator
         foreach (XmlNode dataNode in dataNodes)
         {
             var name = dataNode.Attributes["name"].Value;
-            var value = dataNode.SelectSingleNode("value").InnerText;
+            var valueNode = dataNode.SelectSingleNode("value");
+            if (valueNode == null) continue;
+            var value = valueNode.InnerText;
+
             _ = sb.AppendLine("    /// <summary>");
-            if (value.Contains("\n"))
+            if (value.Contains('\n'))
             {
-                var sp = value.Split('\n');
-                foreach (var spt in sp)
+                var lines = value.Split('\n');
+                foreach (var line in lines)
                 {
-                    if (string.IsNullOrEmpty(spt.Trim()))
+                    if (string.IsNullOrWhiteSpace(line))
                     {
                         continue;
                     }
 
-                    _ = sb.AppendLine($"    /// {spt}");
+                    var escapedLine = EscapeForXmlComment(line);
+                    _ = sb.AppendLine($"    /// {escapedLine}");
                 }
             }
             else
             {
-                _ = sb.AppendLine($"    /// {value}");
+                var escapedValue = EscapeForXmlComment(value);
+                _ = sb.AppendLine($"    /// {escapedValue}");
             }
 
             _ = sb.AppendLine("    /// </summary>");

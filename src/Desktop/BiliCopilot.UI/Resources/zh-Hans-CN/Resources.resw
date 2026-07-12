@@ -2155,7 +2155,7 @@
     <value>视频分区</value>
   </data>
   <data name="VideoPartSelected" xml:space="preserve">
-    <value>已选择分P：“{0}”</value>
+    <value>已选择分P："{0}"</value>
   </data>
   <data name="Videos" xml:space="preserve">
     <value>视频</value>
@@ -2428,6 +2428,24 @@
   </data>
   <data name="WatchOnExternalPlayer" xml:space="preserve">
     <value>请在外部播放器中观看内容</value>
+  </data>
+  <data name="UseExternalMpv" xml:space="preserve">
+    <value>使用外部 MPV 播放器</value>
+  </data>
+  <data name="UseExternalMpvDescription" xml:space="preserve">
+    <value>开启后将使用外部安装的 MPV 播放器而非内置版本</value>
+  </data>
+  <data name="ExternalMpvPath" xml:space="preserve">
+    <value>外部 MPV 路径</value>
+  </data>
+  <data name="ExternalMpvPathDescription" xml:space="preserve">
+    <value>指定外部 mpv.exe 的完整路径</value>
+  </data>
+  <data name="PickMpvFile" xml:space="preserve">
+    <value>选择文件</value>
+  </data>
+  <data name="InternalPlayer" xml:space="preserve">
+    <value>内置播放器</value>
   </data>
   <data name="ModelAlreadyExist" xml:space="preserve">
     <value>模型已经存在，请勿重复创建</value>
