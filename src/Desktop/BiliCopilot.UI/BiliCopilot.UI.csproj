@@ -19,6 +19,7 @@
 
     <!-- MSIX Package Signing: let MSBuild auto-sign during packaging -->
     <PackageCertificateFile>$(MSBuildThisFileDirectory)newbilicert.pfx</PackageCertificateFile>
+    <PackageCertificateThumbprint>54767626D9E2B137160C6BAACFB8E7ED146834FA</PackageCertificateThumbprint>
     <PackageCertificatePassword>bili2024</PackageCertificatePassword>
     <AppxPackageSigningEnabled>true</AppxPackageSigningEnabled>
   </PropertyGroup>
@@ -277,6 +278,7 @@
 
   <ItemGroup>
     <Content Include="Assets\StoreLogo.png" />
+    <Content Include="Assets\logo.ico" />
   </ItemGroup>
 
   <ItemGroup>

@@ -16,7 +16,7 @@
     <tb:TaskbarIcon
         x:Key="TrayIcon"
         ContextMenuMode="PopupMenu"
-        IconSource="\Assets\logo.ico"
+        IconSource="ms-appx:///Assets/logo.ico"
         LeftClickCommand="{StaticResource ShowHideWindowCommand}"
         NoLeftClickDelay="True"
         ToolTipText="{ext:Locale Name=AppName}"

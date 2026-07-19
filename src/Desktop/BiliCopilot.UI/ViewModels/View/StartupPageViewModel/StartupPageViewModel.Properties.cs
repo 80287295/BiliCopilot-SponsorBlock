@@ -21,8 +21,8 @@ public sealed partial class StartupPageViewModel
     [ObservableProperty]
     private string _version;
 
-    [ObservableProperty]
-    private string _errorTip;
+    // Note: ErrorTip is manually implemented in StartupPageViewModel.cs with custom SetProperty logic + logging
+    // Do NOT add [ObservableProperty] here - it would cause CS0102 duplicate definition
 
     [ObservableProperty]
     private bool _isQRCodeLoading;

@@ -57,6 +57,25 @@
                     Style="{StaticResource CaptionTextBlockStyle}"
                     Text="{ext:Locale Name=QRLoginTip}"
                     TextWrapping="Wrap" />
+                <!-- 🔍 调试信息面板（发布前移除） -->
+                <Border
+                    x:Name="DebugInfoBorder"
+                    MaxWidth="300"
+                    Margin="0,8,0,0"
+                    Padding="8"
+                    HorizontalAlignment="Center"
+                    Background="#FFF0F000"
+                    CornerRadius="4"
+                    Visibility="Visible">
+                    <TextBlock
+                        x:Name="DebugInfoBlock"
+                        FontFamily="Consolas"
+                        FontSize="11"
+                        Foreground="Red"
+                        Text="{x:Bind ViewModel.DebugInfo, Mode=OneWay}"
+                        TextAlignment="Center"
+                        TextWrapping="Wrap" />
+                </Border>
                 <Grid
                     x:Name="QRLoginContainer"
                     Width="220"
@@ -91,13 +110,14 @@
                         x:Name="QRMaskContainer"
                         Background="{ThemeResource AcrylicInAppFillColorDefaultBrush}"
                         CornerRadius="{ThemeResource ControlCornerRadius}"
-                        Visibility="{x:Bind ViewModel.ErrorTip, Mode=OneWay, Converter={StaticResource ObjectToVisibilityConverter}}">
+                        Visibility="{x:Bind ViewModel.HasError, Mode=OneWay}">
                         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                             <TextBlock
                                 x:Name="QRTipBlock"
                                 MaxWidth="200"
                                 HorizontalAlignment="Center"
                                 Style="{StaticResource BodyTextBlockStyle}"
+                                Text="{x:Bind ViewModel.ErrorTip, Mode=OneWay}"
                                 TextAlignment="Center"
                                 TextWrapping="Wrap" />
                         </StackPanel>
