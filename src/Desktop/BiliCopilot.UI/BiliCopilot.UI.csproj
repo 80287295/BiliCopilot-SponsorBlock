@@ -313,6 +313,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools.MSIX" />
     <PackageReference Include="Microsoft.WindowsAppSDK" />
     <PackageReference Include="Microsoft.Graphics.Win2D" />
 	<PackageReference Include="Richasy.AgentKernel.Connectors.Ali" />
