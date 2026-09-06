@@ -1,5 +1,7 @@
 ﻿// Copyright (c) Bili Copilot. All rights reserved.
 
+using BiliCopilot.UI.Extensions;
+
 namespace BiliCopilot.UI.Controls.History;
 
 /// <summary>
@@ -24,8 +26,6 @@ public sealed partial class HistoryVideoSearchSection : HistoryPageControlBase
         ViewModel.SearchUpdated -= OnSearchUpdatedAsync;
     }
 
-    private async void OnSearchUpdatedAsync(object? sender, EventArgs e)
-    {
-        await View.DelayCheckItemsAsync();
-    }
+    private void OnSearchUpdatedAsync(object? sender, EventArgs e)
+        => View.DelayCheckItemsAsync().SafeFireAndForget();
 }

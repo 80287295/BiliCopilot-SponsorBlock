@@ -111,6 +111,18 @@ git clone https://github.com/<YOUR_USERNAME>/BiliCopilot-SponsorBlock.git
 | libmpv-2.dll | src\Desktop\BiliCopilot.UI\Assets\libmpv\x64(或者 arm64) | 可以在 [mpv-winbuild](https://github.com/zhongfly/mpv-winbuild) 下载最新的 dev 构建（x64 对应 x86_x64，arm64 对应 aarch64），把 libmpv-2.dll 放入对应文件夹中，用以 mpv 播放 |
 | ffmpeg.exe   | src\Desktop\BiliCopilot.UI\Assets\ffmpeg                 | 可以在 [mpv-winbuild](https://github.com/zhongfly/mpv-winbuild) 下载最新 ffmpeg x64 构建，将 ffmpeg.exe 放入对应文件夹中，用于视频下载后的混流                               |
 
+### 构建与签名
+
+MSIX 签名证书密码已不再入库。构建（打包签名）时请通过命令行参数或环境变量提供密码：
+
+```shell
+# 方式一：MSBuild 属性
+dotnet build src/Desktop/BiliCopilot.UI -p:PackageCertificatePassword=你的证书密码
+
+# 方式二：环境变量
+set BILICERT_PASSWORD=你的证书密码
+```
+
 ## 使用
 
 ### 登录

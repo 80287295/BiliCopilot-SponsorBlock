@@ -183,11 +183,7 @@ public sealed partial class PlayerWindow : IAsyncDisposable
             _enteringCompactOverlay = false;
             _isPresenterChanging = true;
             _rootWindow.SetPresenter(AppWindowPresenterKind.FullScreen);
-            _ = Task.Run(() =>
-            {
-                Task.Delay(500).Wait();
-                _isPresenterChanging = false;
-            });
+            ResetPresenterChangingFlagAfterDelay();
         }
     }
 
@@ -198,11 +194,7 @@ public sealed partial class PlayerWindow : IAsyncDisposable
             _enteringFullScreen = false;
             _isPresenterChanging = true;
             _rootWindow.SetPresenter(AppWindowPresenterKind.Overlapped);
-            _ = Task.Run(() =>
-            {
-                Task.Delay(500).Wait();
-                _isPresenterChanging = false;
-            });
+            ResetPresenterChangingFlagAfterDelay();
         }
     }
 
@@ -219,11 +211,7 @@ public sealed partial class PlayerWindow : IAsyncDisposable
             _enteringFullScreen = false;
             _isPresenterChanging = true;
             _rootWindow.SetPresenter(AppWindowPresenterKind.CompactOverlay);
-            _ = Task.Run(() =>
-            {
-                Task.Delay(500).Wait();
-                _isPresenterChanging = false;
-            });
+            ResetPresenterChangingFlagAfterDelay();
         }
     }
 
@@ -234,12 +222,24 @@ public sealed partial class PlayerWindow : IAsyncDisposable
             _enteringCompactOverlay = false;
             _isPresenterChanging = true;
             _rootWindow.SetPresenter(AppWindowPresenterKind.Overlapped);
-            _ = Task.Run(() =>
-            {
-                Task.Delay(500).Wait();
-                _isPresenterChanging = false;
-            });
+            ResetPresenterChangingFlagAfterDelay();
         }
+    }
+
+    /// <summary>
+    /// 延迟 500ms 在 UI 线程复位展示模式切换标志（替代线程池线程同步阻塞）.
+    /// </summary>
+    private void ResetPresenterChangingFlagAfterDelay()
+    {
+        var timer = DispatcherQueue.GetForCurrentThread().CreateTimer();
+        timer.Interval = TimeSpan.FromMilliseconds(500);
+        timer.IsRepeating = false;
+        timer.Tick += (sender, args) =>
+        {
+            sender.Stop();
+            _isPresenterChanging = false;
+        };
+        timer.Start();
     }
 
     /// <summary>

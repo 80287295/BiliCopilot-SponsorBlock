@@ -2,6 +2,8 @@
 
 using BiliCopilot.UI.ViewModels.Items;
 
+using BiliCopilot.UI.Extensions;
+
 namespace BiliCopilot.UI.Controls.Moment;
 
 /// <summary>
@@ -39,8 +41,6 @@ public sealed partial class ComprehensiveMainBody : MomentUperSectionControlBase
         newValue.ListUpdated += OnListUpdatedAsync;
     }
 
-    private async void OnListUpdatedAsync(object? sender, EventArgs e)
-    {
-        await View.DelayCheckItemsAsync();
-    }
+    private void OnListUpdatedAsync(object? sender, EventArgs e)
+        => View.DelayCheckItemsAsync().SafeFireAndForget();
 }

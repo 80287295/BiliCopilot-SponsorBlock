@@ -3,6 +3,8 @@
 using BiliCopilot.UI.ViewModels.Components;
 using Richasy.WinUIKernel.Share.Base;
 
+using BiliCopilot.UI.Extensions;
+
 namespace BiliCopilot.UI.Controls.History;
 
 /// <summary>
@@ -40,10 +42,8 @@ public sealed partial class ArticleHistorySection : ArticleHistorySectionBase
         newValue.ListUpdated += OnArticleListUpdatedAsync;
     }
 
-    private async void OnArticleListUpdatedAsync(object? sender, EventArgs e)
-    {
-        await View.DelayCheckItemsAsync();
-    }
+    private void OnArticleListUpdatedAsync(object? sender, EventArgs e)
+        => View.DelayCheckItemsAsync().SafeFireAndForget();
 }
 
 /// <summary>

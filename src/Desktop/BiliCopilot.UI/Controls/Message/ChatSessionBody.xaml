@@ -18,21 +18,31 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <ScrollView x:Name="MessageView" Style="{StaticResource PageScrollViewStyle}">
-            <ItemsControl
+            <ListView
                 MaxWidth="800"
                 Margin="20,12,20,20"
+                Padding="0"
+                SelectionMode="None"
+                IsItemClickEnabled="False"
                 ItemsSource="{x:Bind ViewModel.Messages, Mode=OneWay}">
-                <ItemsControl.ItemsPanel>
+                <ListView.ItemsPanel>
                     <ItemsPanelTemplate>
                         <ItemsStackPanel />
                     </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
+                </ListView.ItemsPanel>
+                <ListView.ItemTemplate>
                     <DataTemplate x:DataType="items:ChatMessageItemViewModel">
                         <local:ChatMessageItemControl Margin="0,4" ViewModel="{x:Bind}" />
                     </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+                </ListView.ItemTemplate>
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        <Setter Property="Padding" Value="0" />
+                        <Setter Property="MinHeight" Value="0" />
+                    </Style>
+                </ListView.ItemContainerStyle>
+            </ListView>
         </ScrollView>
         <base:EmptyHolder
             Description="{ext:Locale Name=NoMessage}"

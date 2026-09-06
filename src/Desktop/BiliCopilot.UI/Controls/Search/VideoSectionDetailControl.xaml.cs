@@ -3,6 +3,8 @@
 using BiliCopilot.UI.ViewModels.Components;
 using Richasy.WinUIKernel.Share.Base;
 
+using BiliCopilot.UI.Extensions;
+
 namespace BiliCopilot.UI.Controls.Search;
 
 /// <summary>
@@ -27,10 +29,8 @@ public sealed partial class VideoSectionDetailControl : VideoSectionDetailContro
         ViewModel.ListUpdated -= OnListUpdatedAsync;
     }
 
-    private async void OnListUpdatedAsync(object? sender, EventArgs e)
-    {
-        await View.DelayCheckItemsAsync();
-    }
+    private void OnListUpdatedAsync(object? sender, EventArgs e)
+        => View.DelayCheckItemsAsync().SafeFireAndForget();
 }
 
 /// <summary>

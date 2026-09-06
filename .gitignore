@@ -357,6 +357,10 @@ FodyWeavers.xsd
 # Tools
 tools/Prompt.txt
 
+# 签名证书与机密（防止误提交）
+*.pfx
+*.msix
+
 # Plugin package
 /src/App/Assets/AppCenterSecret.txt
 /src/Desktop/BiliCopilot.UI/Assets/libmpv/libmpv-2.dll
@@ -369,3 +373,7 @@ tools/Prompt.txt
 src/Desktop/BiliCopilot.UI/Assets/WheelScrollService.exe
 src/Desktop/BiliCopilot.UI/Assets/WheelScrollService.dll
 src/Desktop/BiliCopilot.UI/Assets/WheelScrollService.runtimeconfig.json
+
+# Build outputs
+publish_output/
+publish_output_sb/

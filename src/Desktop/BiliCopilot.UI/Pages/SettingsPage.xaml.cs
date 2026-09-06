@@ -1,5 +1,6 @@
 ﻿// Copyright (c) Bili Copilot. All rights reserved.
 
+using BiliCopilot.UI.Extensions;
 using BiliCopilot.UI.ViewModels.View;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Navigation;
@@ -25,29 +26,36 @@ public sealed partial class SettingsPage : SettingsPageBase
     }
 
     /// <inheritdoc/>
-    protected override async void OnNavigatingFrom(NavigatingCancelEventArgs e)
-        => await ViewModel.CheckSaveServicesAsync();
+    protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
+        => ViewModel.CheckSaveServicesAsync().SafeFireAndForget(ex => System.Diagnostics.Debug.WriteLine($"设置保存校验失败: {ex.Message}"));
 
     private void OnJoinGroupButtonClick(object sender, RoutedEventArgs e)
         => FlyoutBase.ShowAttachedFlyout(sender as FrameworkElement);
 
     private async void OnSectionSelectorChangedAsync(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
     {
-        var index = Convert.ToInt32(sender.SelectedItem.Tag);
-        if (index == 0)
+        try
         {
-            GenericContainer.Visibility = Visibility.Visible;
-            AIContainer.Visibility = Visibility.Collapsed;
-        }
-        else
-        {
-            GenericContainer.Visibility = Visibility.Collapsed;
-            AIContainer.Visibility = Visibility.Visible;
-            await ViewModel.InitializeChatServicesAsync();
-            if (AIPanel.Children.Count == 0)
+            var index = Convert.ToInt32(sender.SelectedItem.Tag);
+            if (index == 0)
             {
-                await LoadChatControlsAsync();
+                GenericContainer.Visibility = Visibility.Visible;
+                AIContainer.Visibility = Visibility.Collapsed;
             }
+            else
+            {
+                GenericContainer.Visibility = Visibility.Collapsed;
+                AIContainer.Visibility = Visibility.Visible;
+                await ViewModel.InitializeChatServicesAsync();
+                if (AIPanel.Children.Count == 0)
+                {
+                    await LoadChatControlsAsync();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"设置页区块切换失败: {ex.Message}");
         }
     }
 

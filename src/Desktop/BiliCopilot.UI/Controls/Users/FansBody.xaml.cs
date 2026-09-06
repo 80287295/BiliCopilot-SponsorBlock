@@ -1,5 +1,7 @@
 ﻿// Copyright (c) Bili Copilot. All rights reserved.
 
+using BiliCopilot.UI.Extensions;
+
 namespace BiliCopilot.UI.Controls.Users;
 
 /// <summary>
@@ -24,8 +26,6 @@ public sealed partial class FansBody : FansPageControlBase
         ViewModel.UserListUpdated -= OnVideoListUpdatedAsync;
     }
 
-    private async void OnVideoListUpdatedAsync(object? sender, EventArgs e)
-    {
-        await View.DelayCheckItemsAsync();
-    }
+    private void OnVideoListUpdatedAsync(object? sender, EventArgs e)
+        => View.DelayCheckItemsAsync().SafeFireAndForget();
 }

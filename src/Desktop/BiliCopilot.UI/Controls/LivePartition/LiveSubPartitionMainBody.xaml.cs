@@ -3,6 +3,8 @@
 using BiliCopilot.UI.ViewModels.Components;
 using Richasy.WinUIKernel.Share.Base;
 
+using BiliCopilot.UI.Extensions;
+
 namespace BiliCopilot.UI.Controls.LivePartition;
 
 /// <summary>
@@ -40,10 +42,8 @@ public sealed partial class LiveSubPartitionMainBody : LiveSubPartitionControlBa
         newValue.LiveListUpdated += OnLiveListUpdatedAsync;
     }
 
-    private async void OnLiveListUpdatedAsync(object? sender, EventArgs e)
-    {
-        await View.DelayCheckItemsAsync();
-    }
+    private void OnLiveListUpdatedAsync(object? sender, EventArgs e)
+        => View.DelayCheckItemsAsync().SafeFireAndForget();
 }
 
 /// <summary>

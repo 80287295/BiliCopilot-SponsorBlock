@@ -2,6 +2,8 @@
 
 using BiliCopilot.UI.ViewModels.Components;
 
+using BiliCopilot.UI.Extensions;
+
 namespace BiliCopilot.UI.Controls.Message;
 
 /// <summary>
@@ -40,8 +42,6 @@ public sealed partial class NotifyMessageBody : NotifyMessageControlBase
         View?.ResetScrollPosition();
     }
 
-    private async void OnMessageListUpdatedAsync(object? sender, EventArgs e)
-    {
-        await View.DelayCheckItemsAsync();
-    }
+    private void OnMessageListUpdatedAsync(object? sender, EventArgs e)
+        => View.DelayCheckItemsAsync().SafeFireAndForget();
 }

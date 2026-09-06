@@ -266,7 +266,7 @@ public sealed partial class VideoDanmakuPanel : DanmakuControlBase
         }
 
         // 确保在 UI 线程空闲时执行弹幕绘制
-        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, async () =>
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
         {
             if (!IsLoaded || ViewModel is null)
             {

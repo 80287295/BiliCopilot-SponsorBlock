@@ -28,7 +28,7 @@ public sealed partial class StartupPageViewModel
     private bool _isQRCodeLoading;
 
     /// <summary>
-    /// 二维码图片控件.
+    /// 二维码图片数据就绪，由视图层订阅并渲染（MVVM 分层：ViewModel 不持有 XAML 控件）.
     /// </summary>
-    public Image? QRCodeImage { get; private set; }
+    public event EventHandler<byte[]>? QRCodeImageReady;
 }

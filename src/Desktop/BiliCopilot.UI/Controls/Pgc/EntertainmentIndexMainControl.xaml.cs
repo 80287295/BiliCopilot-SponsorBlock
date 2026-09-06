@@ -2,6 +2,8 @@
 
 using BiliCopilot.UI.ViewModels.Components;
 
+using BiliCopilot.UI.Extensions;
+
 namespace BiliCopilot.UI.Controls.Pgc;
 
 /// <summary>
@@ -40,8 +42,6 @@ public sealed partial class EntertainmentIndexMainControl : EntertainmentIndexCo
         newValue.ItemsUpdated += OnItemsUpdatedAsync;
     }
 
-    private async void OnItemsUpdatedAsync(object? sender, EventArgs e)
-    {
-        await View.DelayCheckItemsAsync();
-    }
+    private void OnItemsUpdatedAsync(object? sender, EventArgs e)
+        => View.DelayCheckItemsAsync().SafeFireAndForget();
 }

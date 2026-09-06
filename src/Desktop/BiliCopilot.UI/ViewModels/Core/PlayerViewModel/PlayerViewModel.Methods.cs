@@ -304,50 +304,58 @@ public sealed partial class PlayerViewModel
     private void OnClientCacheStateChanged(object? sender, MpvCacheStateEventArgs e)
         => CacheStateChanged?.Invoke(this, e);
 
-    private async void OnClientErrorOccurred(object? sender, MpvError e)
+    private void OnClientErrorOccurred(object? sender, MpvError e)
     {
         if (e == MpvError.TlsError)
         {
             if (!_isTlsFailed)
             {
                 _isTlsFailed = true;
-                return;
             }
 
             return;
         }
-        else if (Player.Duration < 1 && !_isBroken)
+
+        // mpv 错误事件可能来自原生回调线程，所有状态读取与重播统一调度到 UI 线程.
+        queue.TryEnqueue(async () =>
         {
-            _isBroken = true;
-            await Player.ReplayAsync();
-            return;
-        }
-
-        queue.TryEnqueue(() =>
-        {
-            var errorContent = e switch
+            try
             {
-                MpvError.Nomem => ResourceToolkit.GetLocalizedString(StringNames.MpvErrorNoMemory),
-                MpvError.Uninitialized => ResourceToolkit.GetLocalizedString(StringNames.MpvErrorUninitialized),
-                MpvError.LoadingFailed => ResourceToolkit.GetLocalizedString(StringNames.MpvErrorLoadingFailed),
-                MpvError.AoInitFailed => ResourceToolkit.GetLocalizedString(StringNames.MpvErrorAudioFailed),
-                MpvError.VoInitFailed => ResourceToolkit.GetLocalizedString(StringNames.MpvErrorVideoFailed),
-                MpvError.NothingToPlay => ResourceToolkit.GetLocalizedString(StringNames.MpvErrorNotingToPlay),
-                MpvError.UnknownFormat => ResourceToolkit.GetLocalizedString(StringNames.MpvErrorUnknownFormat),
-                MpvError.Unsupported => ResourceToolkit.GetLocalizedString(StringNames.MpvErrorUnsupported),
-                _ => default,
-            };
+                if (Player is not null && Player.Duration < 1 && !_isBroken)
+                {
+                    _isBroken = true;
+                    await Player.ReplayAsync();
+                    return;
+                }
 
-            if (!string.IsNullOrEmpty(errorContent) && (Player.Duration < 1 || e == MpvError.PassthroughFormatUnsupported))
-            {
-                ErrorMessage = errorContent;
+                var errorContent = e switch
+                {
+                    MpvError.Nomem => ResourceToolkit.GetLocalizedString(StringNames.MpvErrorNoMemory),
+                    MpvError.Uninitialized => ResourceToolkit.GetLocalizedString(StringNames.MpvErrorUninitialized),
+                    MpvError.LoadingFailed => ResourceToolkit.GetLocalizedString(StringNames.MpvErrorLoadingFailed),
+                    MpvError.AoInitFailed => ResourceToolkit.GetLocalizedString(StringNames.MpvErrorAudioFailed),
+                    MpvError.VoInitFailed => ResourceToolkit.GetLocalizedString(StringNames.MpvErrorVideoFailed),
+                    MpvError.NothingToPlay => ResourceToolkit.GetLocalizedString(StringNames.MpvErrorNotingToPlay),
+                    MpvError.UnknownFormat => ResourceToolkit.GetLocalizedString(StringNames.MpvErrorUnknownFormat),
+                    MpvError.Unsupported => ResourceToolkit.GetLocalizedString(StringNames.MpvErrorUnsupported),
+                    _ => default,
+                };
+
+                if (!string.IsNullOrEmpty(errorContent) && (Player is null || Player.Duration < 1 || e == MpvError.PassthroughFormatUnsupported))
+                {
+                    ErrorMessage = errorContent;
+                }
+                else
+                {
+                    WarningOccurred?.Invoke(this, ResourceToolkit.GetLocalizedString(StringNames.MpvErrorGeneric));
+                }
+
+                CheckBlackBackgroundVisible();
             }
-            else
+            catch (Exception ex)
             {
-                WarningOccurred?.Invoke(this, ResourceToolkit.GetLocalizedString(StringNames.MpvErrorGeneric));
+                logger.LogWarning(ex, "处理 mpv 错误事件时失败");
             }
-
-            CheckBlackBackgroundVisible();
         });
     }
 
@@ -441,6 +449,18 @@ public sealed partial class PlayerViewModel
 
     private async void OnWindowDestroying(AppWindow sender, object args)
     {
+        try
+        {
+            await OnWindowDestroyingCoreAsync(sender, args);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "处理窗口销毁事件时失败");
+        }
+    }
+
+    private async Task OnWindowDestroyingCoreAsync(AppWindow sender, object args)
+    {
         var appVM = this.Get<AppViewModel>();
         var hideMainWindowOnPlay = SettingsToolkit.ReadLocalSetting(SettingNames.HideMainWindowOnPlay, true);
         if (hideMainWindowOnPlay && !UseIntegrationOperation)
@@ -461,6 +481,18 @@ public sealed partial class PlayerViewModel
     }
 
     private async void OnPlayerPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        try
+        {
+            await OnPlayerPropertyChangedCoreAsync(sender, e);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "处理播放器属性变更时失败");
+        }
+    }
+
+    private async Task OnPlayerPropertyChangedCoreAsync(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(Player.Position))
         {
@@ -650,14 +682,21 @@ public sealed partial class PlayerViewModel
 
     private async void OnConnectorNewMediaRequest(object? sender, MediaSnapshot e)
     {
-        if (_snapshot == e)
+        try
         {
-            return;
-        }
+            if (_snapshot == e)
+            {
+                return;
+            }
 
-        await Client!.PauseAsync();
-        await Client!.StopAsync();
-        await InitializeAsync(e);
+            await Client!.PauseAsync();
+            await Client!.StopAsync();
+            await InitializeAsync(e);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "切换媒体时失败");
+        }
     }
 
     private void OnConnectorPlaylistInitialized(object? sender, PlaylistInitializedEventArgs e)
@@ -714,6 +753,18 @@ public sealed partial class PlayerViewModel
     }
 
     private async void OnWindowKeyUp(InputKeyboardSource sender, KeyEventArgs args)
+    {
+        try
+        {
+            await HandleWindowKeyUpAsync(args);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "处理键盘按键事件时失败");
+        }
+    }
+
+    private async Task HandleWindowKeyUpAsync(KeyEventArgs args)
     {
         if (IsPopupVisible || IsExtraPanelVisible)
         {

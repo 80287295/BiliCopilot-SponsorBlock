@@ -1,5 +1,7 @@
 ﻿// Copyright (c) Bili Copilot. All rights reserved.
 
+using BiliCopilot.UI.Extensions;
+
 namespace BiliCopilot.UI.Controls.ViewLater;
 
 /// <summary>
@@ -24,8 +26,6 @@ public sealed partial class ViewLaterBody : ViewLaterPageControlBase
         ViewModel.ListUpdated -= OnVideoListUpdatedAsync;
     }
 
-    private async void OnVideoListUpdatedAsync(object? sender, EventArgs e)
-    {
-        await View.DelayCheckItemsAsync();
-    }
+    private void OnVideoListUpdatedAsync(object? sender, EventArgs e)
+        => View.DelayCheckItemsAsync().SafeFireAndForget();
 }

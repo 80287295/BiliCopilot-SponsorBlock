@@ -56,8 +56,15 @@ public sealed partial class MessagePageSideBody : MessagePageControlBase
 
     private async void OnChatSessionsUpdatedAsync(object? sender, EventArgs e)
     {
-        await Task.Delay(500);
-        CheckChatSessionCount();
+        try
+        {
+            await Task.Delay(500);
+            CheckChatSessionCount();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"会话列表更新处理失败: {ex.Message}");
+        }
     }
 
     private void CheckSectionSelection()

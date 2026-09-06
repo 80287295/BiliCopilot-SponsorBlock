@@ -1,5 +1,6 @@
 ﻿// Copyright (c) Bili Copilot. All rights reserved.
 
+using BiliCopilot.UI.Extensions;
 using BiliCopilot.UI.Forms;
 using BiliCopilot.UI.ViewModels.Core;
 using BiliCopilot.UI.ViewModels.View;
@@ -24,7 +25,29 @@ public sealed partial class StartupPage : StartupPageBase
     /// <inheritdoc/>
     protected override void OnPageLoaded()
     {
-        ViewModel.InitializeCommand.Execute(QRCodeImage);
+        ViewModel.QRCodeImageReady += OnQRCodeImageReady;
+        ViewModel.InitializeCommand.Execute(default);
+    }
+
+    /// <inheritdoc/>
+    protected override void OnPageUnloaded()
+    {
+        ViewModel.QRCodeImageReady -= OnQRCodeImageReady;
+    }
+
+    private async void OnQRCodeImageReady(object? sender, byte[] imageData)
+    {
+        try
+        {
+            var bitmap = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage();
+            using var stream = new MemoryStream(imageData);
+            await bitmap.SetSourceAsync(stream.AsRandomAccessStream());
+            QRCodeImage.Source = bitmap;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"渲染二维码图片失败: {ex.Message}");
+        }
     }
 
     private void OnWebSignInButtonClick(object sender, RoutedEventArgs e)

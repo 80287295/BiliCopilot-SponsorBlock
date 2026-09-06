@@ -2,6 +2,8 @@
 
 using BiliCopilot.UI.ViewModels.Components;
 
+using BiliCopilot.UI.Extensions;
+
 namespace BiliCopilot.UI.Controls.Article;
 
 /// <summary>
@@ -39,8 +41,6 @@ public sealed partial class ArticlePartitionMainBody : ArticlePartitionDetailCon
         newValue.ArticleListUpdated += OnArticleListUpdatedAsync;
     }
 
-    private async void OnArticleListUpdatedAsync(object? sender, EventArgs e)
-    {
-        await View.DelayCheckItemsAsync();
-    }
+    private void OnArticleListUpdatedAsync(object? sender, EventArgs e)
+        => View.DelayCheckItemsAsync().SafeFireAndForget();
 }

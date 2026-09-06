@@ -1,5 +1,7 @@
 ﻿// Copyright (c) Bili Copilot. All rights reserved.
 
+using BiliCopilot.UI.Extensions;
+
 namespace BiliCopilot.UI.Controls.Popular;
 
 /// <summary>
@@ -24,8 +26,6 @@ public sealed partial class PopularMainBody : PopularPageControlBase
         ViewModel.VideoListUpdated -= OnVideoListUpdatedAsync;
     }
 
-    private async void OnVideoListUpdatedAsync(object? sender, EventArgs e)
-    {
-        await View.DelayCheckItemsAsync();
-    }
+    private void OnVideoListUpdatedAsync(object? sender, EventArgs e)
+        => View.DelayCheckItemsAsync().SafeFireAndForget();
 }

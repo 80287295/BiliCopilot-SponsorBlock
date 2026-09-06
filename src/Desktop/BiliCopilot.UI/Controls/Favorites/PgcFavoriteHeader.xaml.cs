@@ -1,5 +1,6 @@
 ﻿// Copyright (c) Bili Copilot. All rights reserved.
 
+using BiliCopilot.UI.Extensions;
 using BiliCopilot.UI.ViewModels.Components;
 using Richasy.BiliKernel.Models;
 
@@ -24,7 +25,7 @@ public sealed partial class PgcFavoriteHeader : PgcFavoriteControlBase
             return;
         }
 
-        UpdateStatusSelectionAsync();
+        UpdateStatusSelectionAsync().SafeFireAndForget();
     }
 
     /// <inheritdoc/>
@@ -39,10 +40,10 @@ public sealed partial class PgcFavoriteHeader : PgcFavoriteControlBase
             return;
         }
 
-        UpdateStatusSelectionAsync();
+        UpdateStatusSelectionAsync().SafeFireAndForget();
     }
 
-    private async void UpdateStatusSelectionAsync()
+    private async Task UpdateStatusSelectionAsync()
     {
         if (ViewModel is null)
         {

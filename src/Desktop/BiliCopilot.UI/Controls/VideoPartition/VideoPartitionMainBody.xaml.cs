@@ -2,6 +2,8 @@
 
 using BiliCopilot.UI.ViewModels.Components;
 
+using BiliCopilot.UI.Extensions;
+
 namespace BiliCopilot.UI.Controls.VideoPartition;
 
 /// <summary>
@@ -39,8 +41,6 @@ public sealed partial class VideoPartitionMainBody : VideoPartitionDetailControl
         newValue.VideoListUpdated += OnVideoListUpdatedAsync;
     }
 
-    private async void OnVideoListUpdatedAsync(object? sender, EventArgs e)
-    {
-        await View.DelayCheckItemsAsync();
-    }
+    private void OnVideoListUpdatedAsync(object? sender, EventArgs e)
+        => View.DelayCheckItemsAsync().SafeFireAndForget();
 }

@@ -24,9 +24,16 @@ public sealed partial class EmotePanel : EmotePanelBase
     /// <inheritdoc/>
     protected override async void OnControlLoaded()
     {
-        await ViewModel.InitializeCommand.ExecuteAsync(default);
-        await Task.Delay(400);
-        PackageView.Select(0);
+        try
+        {
+            await ViewModel.InitializeCommand.ExecuteAsync(default);
+            await Task.Delay(400);
+            PackageView.Select(0);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"表情面板初始化失败: {ex.Message}");
+        }
     }
 
     protected override void OnControlUnloaded()

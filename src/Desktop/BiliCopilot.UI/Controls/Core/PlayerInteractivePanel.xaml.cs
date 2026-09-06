@@ -227,112 +227,143 @@ public sealed partial class PlayerInteractivePanel : PlayerControlBase
 
     private async void OnTapTimerTick(object? sender, object? e)
     {
-        _tapTimer.Stop();
-        if (ViewModel.Client is null)
+        try
         {
-            return;
-        }
+            _tapTimer.Stop();
+            if (ViewModel.Client is null)
+            {
+                return;
+            }
 
-        if (_tapCount == 2)
-        {
-            if (_isTouch)
+            if (_tapCount == 2)
             {
-                var state = ViewModel.Player.PlaybackState;
-                if (state == Richasy.MpvKernel.Core.Enums.MpvPlayerState.Playing)
+                if (_isTouch)
                 {
-                    await ViewModel.Client.PauseAsync();
+                    var state = ViewModel.Player.PlaybackState;
+                    if (state == Richasy.MpvKernel.Core.Enums.MpvPlayerState.Playing)
+                    {
+                        await ViewModel.Client.PauseAsync();
+                    }
+                    else if (state == Richasy.MpvKernel.Core.Enums.MpvPlayerState.Paused)
+                    {
+                        await ViewModel.Client.ResumeAsync();
+                    }
                 }
-                else if (state == Richasy.MpvKernel.Core.Enums.MpvPlayerState.Paused)
+                else if (_isLeftButton)
                 {
-                    await ViewModel.Client.ResumeAsync();
+                    ViewModel.ToggleFullScreenCommand.Execute(default);
                 }
             }
-            else if (_isLeftButton)
+            else if (_tapCount == 1 && !ViewModel.IsEnd && (!ViewModel.IsControlsVisible || (_startPoint.Y >= 50 && ActualHeight - _startPoint.Y >= 150)))
             {
-                ViewModel.ToggleFullScreenCommand.Execute(default);
+                if (_isTouch)
+                {
+                    ViewModel.IsControlsVisible = !ViewModel.IsControlsVisible;
+                    ViewModel.IsTouchControlsVisible = !ViewModel.IsTouchControlsVisible;
+                }
+                else if (_isLeftButton)
+                {
+                    ViewModel.PlayPauseCommand.Execute(default);
+                }
             }
-        }
-        else if (_tapCount == 1 && !ViewModel.IsEnd && (!ViewModel.IsControlsVisible || (_startPoint.Y >= 50 && ActualHeight - _startPoint.Y >= 150)))
-        {
-            if (_isTouch)
-            {
-                ViewModel.IsControlsVisible = !ViewModel.IsControlsVisible;
-                ViewModel.IsTouchControlsVisible = !ViewModel.IsTouchControlsVisible;
-            }
-            else if (_isLeftButton)
-            {
-                ViewModel.PlayPauseCommand.Execute(default);
-            }
-        }
 
-        _tapCount = 0;
+            _tapCount = 0;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"双击/单击处理失败: {ex.Message}");
+            _tapCount = 0;
+        }
     }
 
     private async void HandleManipulationUpdate(double deltaX, double deltaY)
     {
-        switch (_interactiveArea)
+        try
         {
-            case InteractiveArea.Main:
-                {
-                    if (Math.Abs(deltaX) > 2 && Math.Abs(deltaX) > Math.Abs(deltaY))
+            switch (_interactiveArea)
+            {
+                case InteractiveArea.Main:
                     {
-                        if (ViewModel.Player.PlaybackState == Richasy.MpvKernel.Core.Enums.MpvPlayerState.Playing)
+                        if (Math.Abs(deltaX) > 2 && Math.Abs(deltaX) > Math.Abs(deltaY))
                         {
-                            await ViewModel.Client!.PauseAsync();
-                        }
-
-                        var newPos = GetNewPosition();
-                        if (newPos != null)
-                        {
-                            DispatcherQueue.TryEnqueue(() =>
+                            if (ViewModel.Player.PlaybackState == Richasy.MpvKernel.Core.Enums.MpvPlayerState.Playing)
                             {
-                                ViewModel.IsPreviewProgressChanging = true;
-                                ViewModel.IsControlsVisible = true;
-                                ViewModel.PreviewPosition = newPos.Value;
+                                await ViewModel.Client!.PauseAsync();
+                            }
+
+                            var newPos = GetNewPosition();
+                            if (newPos != null)
+                            {
+                                DispatcherQueue.TryEnqueue(() =>
+                                {
+                                    ViewModel.IsPreviewProgressChanging = true;
+                                    ViewModel.IsControlsVisible = true;
+                                    ViewModel.PreviewPosition = newPos.Value;
+                                });
+                            }
+                        }
+                    }
+
+                    break;
+                case InteractiveArea.Aside:
+                    {
+                        if (Math.Abs(deltaY) > 5 && Math.Abs(deltaY) > Math.Abs(deltaX))
+                        {
+                            var volumeChange = -deltaY / 10;
+                            DispatcherQueue.TryEnqueue(async () =>
+                            {
+                                try
+                                {
+                                    var currentVolume = ViewModel.Player.Volume;
+                                    var newVolume = Math.Max(0, Math.Min(ViewModel.MaxVolume, currentVolume + volumeChange));
+                                    ViewModel.LastVolumeChangingTime = DateTimeOffset.Now;
+                                    ViewModel.IsVolumeChanging = true;
+                                    await ViewModel.Client!.SetVolumeAsync(newVolume);
+                                }
+                                catch (Exception ex)
+                                {
+                                    System.Diagnostics.Debug.WriteLine($"滑动调节音量失败: {ex.Message}");
+                                }
                             });
                         }
                     }
-                }
 
-                break;
-            case InteractiveArea.Aside:
-                {
-                    if (Math.Abs(deltaY) > 5 && Math.Abs(deltaY) > Math.Abs(deltaX))
-                    {
-                        var volumeChange = -deltaY / 10;
-                        DispatcherQueue.TryEnqueue(async () =>
-                        {
-                            var currentVolume = ViewModel.Player.Volume;
-                            var newVolume = Math.Max(0, Math.Min(ViewModel.MaxVolume, currentVolume + volumeChange));
-                            ViewModel.LastVolumeChangingTime = DateTimeOffset.Now;
-                            ViewModel.IsVolumeChanging = true;
-                            await ViewModel.Client!.SetVolumeAsync(newVolume);
-                        });
-                    }
-                }
-
-                break;
-            default:
-                break;
+                    break;
+                default:
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"手势进度调节失败: {ex.Message}");
         }
     }
 
     private async void HandleManipulationCompleted()
     {
-        if (_interactiveArea == InteractiveArea.Main && Math.Abs(_totalDeltaX) > 10)
+        try
         {
-            var newPos = GetNewPosition();
-            if (newPos.HasValue)
+            if (_interactiveArea == InteractiveArea.Main && Math.Abs(_totalDeltaX) > 10)
             {
-                await ViewModel.Client!.SetCurrentPositionAsync(newPos.Value);
-                await ViewModel.Client.ResumeAsync();
+                var newPos = GetNewPosition();
+                if (newPos.HasValue)
+                {
+                    await ViewModel.Client!.SetCurrentPositionAsync(newPos.Value);
+                    await ViewModel.Client.ResumeAsync();
+                }
             }
         }
-
-        _startPoint = new(0, 0);
-        _totalDeltaX = 0;
-        _interactiveArea = InteractiveArea.None;
-        _isManipulating = false;
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"手势结束处理失败: {ex.Message}");
+        }
+        finally
+        {
+            _startPoint = new(0, 0);
+            _totalDeltaX = 0;
+            _interactiveArea = InteractiveArea.None;
+            _isManipulating = false;
+        }
     }
 
     private double? GetNewPosition()

@@ -1,5 +1,7 @@
 ﻿// Copyright (c) Bili Copilot. All rights reserved.
 
+using BiliCopilot.UI.Extensions;
+
 namespace BiliCopilot.UI.Controls.Moment;
 
 /// <summary>
@@ -27,8 +29,6 @@ public sealed partial class ComprehensiveMomentSpaceControl : UserMomentDetailCo
         }
     }
 
-    private async void OnListUpdatedAsync(object? sender, EventArgs e)
-    {
-        await View.DelayCheckItemsAsync();
-    }
+    private void OnListUpdatedAsync(object? sender, EventArgs e)
+        => View.DelayCheckItemsAsync().SafeFireAndForget();
 }

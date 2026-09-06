@@ -36,7 +36,8 @@ public sealed partial class AIViewModel : ViewModelBase
     /// <summary>
     /// 注入视频信息.
     /// </summary>
-    public async void InjectVideoAsync(VideoPlayerView videoView, VideoPart videoPart)
+    /// <returns><see cref="Task"/>.</returns>
+    public async Task InjectVideoAsync(VideoPlayerView videoView, VideoPart videoPart)
     {
         Cancel();
         _videoView = videoView;
@@ -52,7 +53,8 @@ public sealed partial class AIViewModel : ViewModelBase
     /// <summary>
     /// 注入文章信息.
     /// </summary>
-    public async void InjectArticleAsync(ArticleDetail article)
+    /// <returns><see cref="Task"/>.</returns>
+    public async Task InjectArticleAsync(ArticleDetail article)
     {
         Cancel();
         _articleDetail = article;

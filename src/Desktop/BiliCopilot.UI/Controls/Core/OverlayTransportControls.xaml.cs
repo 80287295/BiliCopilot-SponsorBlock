@@ -2,6 +2,7 @@
 
 using BiliCopilot.UI.Toolkits;
 using BiliCopilot.UI.ViewModels.Core;
+using Microsoft.UI.Dispatching;
 using Richasy.MpvKernel.Core.Enums;
 
 namespace BiliCopilot.UI.Controls.Core;
@@ -19,15 +20,17 @@ public sealed partial class OverlayTransportControls : PlayerControlBase
 
     private readonly List<double> _speedChangeList = [];
     private readonly List<double> _progressChangeList = [];
-    private readonly DispatcherTimer _speedChangeTimer;
-    private readonly DispatcherTimer _progressChangeTimer;
+    private readonly DispatcherQueueTimer _speedChangeTimer;
+    private readonly DispatcherQueueTimer _progressChangeTimer;
     private bool _isFirstChangeVolume = true;
 
     public OverlayTransportControls()
     {
         InitializeComponent();
-        _speedChangeTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(0.5) };
-        _progressChangeTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(0.5) };
+        _speedChangeTimer = DispatcherQueue.CreateTimer();
+        _speedChangeTimer.Interval = TimeSpan.FromSeconds(0.5);
+        _progressChangeTimer = DispatcherQueue.CreateTimer();
+        _progressChangeTimer.Interval = TimeSpan.FromSeconds(0.5);
         _speedChangeTimer.Tick += OnSpeedChangeTick;
         _progressChangeTimer.Tick += OnProgressChangeTick;
     }
@@ -138,17 +141,24 @@ public sealed partial class OverlayTransportControls : PlayerControlBase
 
     private async void OnPlayPauseButtonClick(object sender, RoutedEventArgs e)
     {
-        if (ViewModel.Player.PlaybackState is MpvPlayerState.Playing)
+        try
         {
-            await ViewModel.Client!.PauseAsync();
+            if (ViewModel.Player.PlaybackState is MpvPlayerState.Playing)
+            {
+                await ViewModel.Client!.PauseAsync();
+            }
+            else if (ViewModel.Player.PlaybackState is MpvPlayerState.Paused)
+            {
+                await ViewModel.Client!.ResumeAsync();
+            }
+            else if (ViewModel.Player.PlaybackState is MpvPlayerState.End)
+            {
+                await ViewModel.Player.ReplayAsync();
+            }
         }
-        else if (ViewModel.Player.PlaybackState is MpvPlayerState.Paused)
+        catch (Exception ex)
         {
-            await ViewModel.Client!.ResumeAsync();
-        }
-        else if (ViewModel.Player.PlaybackState is MpvPlayerState.End)
-        {
-            await ViewModel.Player.ReplayAsync();
+            System.Diagnostics.Debug.WriteLine($"播放/暂停操作失败: {ex.Message}");
         }
     }
 
@@ -175,26 +185,33 @@ public sealed partial class OverlayTransportControls : PlayerControlBase
 
     private async void OnVolumeValueChanged(object sender, Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e)
     {
-        var newValue = e.NewValue;
-        if (ViewModel?.Client is null || ViewModel.Player?.IsPlaybackInitialized != true)
+        try
         {
-            return;
-        }
+            var newValue = e.NewValue;
+            if (ViewModel?.Client is null || ViewModel.Player?.IsPlaybackInitialized != true)
+            {
+                return;
+            }
 
-        if (_isFirstChangeVolume && (ViewModel.Player.Volume > 100 && newValue == 100))
+            if (_isFirstChangeVolume && (ViewModel.Player.Volume > 100 && newValue == 100))
+            {
+                await Task.Delay(400);
+                ViewModel.Player.RaisePropertyChanged(nameof(ViewModel.Player.Volume));
+                _isFirstChangeVolume = false;
+                return;
+            }
+
+            if (Math.Abs(newValue - ViewModel.Player.Volume) < 1)
+            {
+                return;
+            }
+
+            await ViewModel.ChangeVolumeAsync(newValue);
+        }
+        catch (Exception ex)
         {
-            await Task.Delay(400);
-            ViewModel.Player.RaisePropertyChanged(nameof(ViewModel.Player.Volume));
-            _isFirstChangeVolume = false;
-            return;
+            System.Diagnostics.Debug.WriteLine($"音量调节失败: {ex.Message}");
         }
-
-        if (Math.Abs(newValue - ViewModel.Player.Volume) < 1)
-        {
-            return;
-        }
-
-        await ViewModel.ChangeVolumeAsync(newValue);
     }
 
     private void OnSpeedValueChanged(object sender, Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e)
@@ -258,44 +275,62 @@ public sealed partial class OverlayTransportControls : PlayerControlBase
 
     private async void OnSpeedChangeTick(object? sender, object e)
     {
-        var lastSpeed = _speedChangeList.LastOrDefault();
-        _speedChangeList.Clear();
-        if (Math.Abs(lastSpeed - ViewModel.Player.PlaybackRate) > 0.1)
+        try
         {
-            await ViewModel.Client!.SetSpeedAsync(lastSpeed);
-            CheckSpeedButtonState();
-        }
+            var lastSpeed = _speedChangeList.LastOrDefault();
+            _speedChangeList.Clear();
+            if (Math.Abs(lastSpeed - ViewModel.Player.PlaybackRate) > 0.1)
+            {
+                await ViewModel.Client!.SetSpeedAsync(lastSpeed);
+                CheckSpeedButtonState();
+            }
 
-        _speedChangeList.Clear();
-        _speedChangeTimer.Stop();
+            _speedChangeList.Clear();
+            _speedChangeTimer.Stop();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"倍速设置失败: {ex.Message}");
+            _speedChangeList.Clear();
+            _speedChangeTimer.Stop();
+        }
     }
 
     private async void OnProgressChangeTick(object? sender, object e)
     {
-        var lastProgress = _progressChangeList.LastOrDefault();
-        _progressChangeList.Clear();
-        if (Math.Abs(lastProgress - ViewModel.Player.Position) >= 1.5)
+        try
         {
-            if (ViewModel.IsNextTipShown)
+            var lastProgress = _progressChangeList.LastOrDefault();
+            _progressChangeList.Clear();
+            if (Math.Abs(lastProgress - ViewModel.Player.Position) >= 1.5)
             {
-                ViewModel.HideNextTipCommand.Execute(default);
-            }
+                if (ViewModel.IsNextTipShown)
+                {
+                    ViewModel.HideNextTipCommand.Execute(default);
+                }
 
-            if (ViewModel.Player.PlaybackState is MpvPlayerState.End)
-            {
-                await ViewModel.Player.ReplayAsync(lastProgress);
-            }
-            else
-            {
-                await ViewModel.Client!.SetCurrentPositionAsync(lastProgress);
+                if (ViewModel.Player.PlaybackState is MpvPlayerState.End)
+                {
+                    await ViewModel.Player.ReplayAsync(lastProgress);
+                }
+                else
+                {
+                    await ViewModel.Client!.SetCurrentPositionAsync(lastProgress);
+                }
             }
         }
-
-        _progressChangeList.Clear();
-        _progressChangeTimer.Stop();
-        ChangingTimeBlock.Text = string.Empty;
-        ChangingTimeBlock.Visibility = Visibility.Collapsed;
-        CommonPositionContainer.Visibility = Visibility.Visible;
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"进度跳转失败: {ex.Message}");
+        }
+        finally
+        {
+            _progressChangeList.Clear();
+            _progressChangeTimer.Stop();
+            ChangingTimeBlock.Text = string.Empty;
+            ChangingTimeBlock.Visibility = Visibility.Collapsed;
+            CommonPositionContainer.Visibility = Visibility.Visible;
+        }
     }
 
     private void OnSubtitleFlyoutOpened(object sender, object e)
@@ -314,57 +349,71 @@ public sealed partial class OverlayTransportControls : PlayerControlBase
 
     private async void CheckSpeedButtonState()
     {
-        if (ViewModel is null)
+        try
         {
-            return;
-        }
+            if (ViewModel is null)
+            {
+                return;
+            }
 
-        await Task.Delay(300);
-        var speed = ViewModel.Player?.PlaybackRate ?? 0;
-        HalfSpeedButton.IsChecked = false;
-        DefaultSpeedButton.IsChecked = false;
-        OneTwoFiveSpeedButton.IsChecked = false;
-        OneHalfSpeedButton.IsChecked = false;
-        DoubleSpeedButton.IsChecked = false;
-        TripleSpeedButton.IsChecked = false;
-        if (Math.Abs(speed - 0.5) < 0.01)
-        {
-            HalfSpeedButton.IsChecked = true;
+            await Task.Delay(300);
+            var speed = ViewModel.Player?.PlaybackRate ?? 0;
+            HalfSpeedButton.IsChecked = false;
+            DefaultSpeedButton.IsChecked = false;
+            OneTwoFiveSpeedButton.IsChecked = false;
+            OneHalfSpeedButton.IsChecked = false;
+            DoubleSpeedButton.IsChecked = false;
+            TripleSpeedButton.IsChecked = false;
+            if (Math.Abs(speed - 0.5) < 0.01)
+            {
+                HalfSpeedButton.IsChecked = true;
+            }
+            else if (Math.Abs(speed - 1) < 0.01)
+            {
+                DefaultSpeedButton.IsChecked = true;
+            }
+            else if (Math.Abs(speed - 1.25) < 0.01)
+            {
+                OneTwoFiveSpeedButton.IsChecked = true;
+            }
+            else if (Math.Abs(speed - 1.5) < 0.01)
+            {
+                OneHalfSpeedButton.IsChecked = true;
+            }
+            else if (Math.Abs(speed - 2) < 0.01)
+            {
+                DoubleSpeedButton.IsChecked = true;
+            }
+            else if (Math.Abs(speed - 3) < 0.01)
+            {
+                TripleSpeedButton.IsChecked = true;
+            }
         }
-        else if (Math.Abs(speed - 1) < 0.01)
+        catch (Exception ex)
         {
-            DefaultSpeedButton.IsChecked = true;
-        }
-        else if (Math.Abs(speed - 1.25) < 0.01)
-        {
-            OneTwoFiveSpeedButton.IsChecked = true;
-        }
-        else if (Math.Abs(speed - 1.5) < 0.01)
-        {
-            OneHalfSpeedButton.IsChecked = true;
-        }
-        else if (Math.Abs(speed - 2) < 0.01)
-        {
-            DoubleSpeedButton.IsChecked = true;
-        }
-        else if (Math.Abs(speed - 3) < 0.01)
-        {
-            TripleSpeedButton.IsChecked = true;
+            System.Diagnostics.Debug.WriteLine($"倍速按钮状态检查失败: {ex.Message}");
         }
     }
 
     private async void OnQuickSpeedButtonClick(object sender, RoutedEventArgs e)
     {
-        var speed = Convert.ToDouble((sender as FrameworkElement)?.Tag);
-        _speedChangeList.Clear();
-        _speedChangeTimer.Stop();
-        if (Math.Abs(speed - ViewModel.Player.PlaybackRate) > 0.1)
+        try
         {
-            await ViewModel.Client!.SetSpeedAsync(speed);
+            var speed = Convert.ToDouble((sender as FrameworkElement)?.Tag);
+            _speedChangeList.Clear();
+            _speedChangeTimer.Stop();
+            if (Math.Abs(speed - ViewModel.Player.PlaybackRate) > 0.1)
+            {
+                await ViewModel.Client!.SetSpeedAsync(speed);
+            }
+            else
+            {
+                CheckSpeedButtonState();
+            }
         }
-        else
+        catch (Exception ex)
         {
-            CheckSpeedButtonState();
+            System.Diagnostics.Debug.WriteLine($"快捷倍速切换失败: {ex.Message}");
         }
     }
 

@@ -1,5 +1,7 @@
 ﻿// Copyright (c) Bili Copilot. All rights reserved.
 
+using BiliCopilot.UI.Extensions;
+
 namespace BiliCopilot.UI.Controls.LivePartition;
 
 /// <summary>
@@ -24,8 +26,6 @@ public sealed partial class LiveRecommendMainBody : LivePartitionPageControlBase
         ViewModel.RecommendUpdated -= OnLiveListUpdatedAsync;
     }
 
-    private async void OnLiveListUpdatedAsync(object? sender, EventArgs e)
-    {
-        await View.DelayCheckItemsAsync();
-    }
+    private void OnLiveListUpdatedAsync(object? sender, EventArgs e)
+        => View.DelayCheckItemsAsync().SafeFireAndForget();
 }

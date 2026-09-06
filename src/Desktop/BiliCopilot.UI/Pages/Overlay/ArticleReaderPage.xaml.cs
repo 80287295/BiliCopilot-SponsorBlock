@@ -1,5 +1,6 @@
 ﻿// Copyright (c) Bili Copilot. All rights reserved.
 
+using BiliCopilot.UI.Extensions;
 using BiliCopilot.UI.ViewModels.View;
 using Richasy.BiliKernel.Models.Article;
 using Richasy.WinUIKernel.Share.Base;
@@ -33,11 +34,11 @@ public sealed partial class ArticleReaderPage : ArticleReaderPageBase, IParamete
         ViewModel.ArticleInitialized -= OnInitializedAsync;
     }
 
-    private async void OnInitializedAsync(object? sender, EventArgs e)
+    private void OnInitializedAsync(object? sender, EventArgs e)
     {
         if (ViewModel.Content is not null && Reader.IsInitialized)
         {
-            await Reader.LoadContentAsync(ViewModel.Content);
+            Reader.LoadContentAsync(ViewModel.Content).SafeFireAndForget();
         }
     }
 }

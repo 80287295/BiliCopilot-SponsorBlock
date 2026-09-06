@@ -79,7 +79,7 @@ public sealed partial class AppViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private async Task LaunchAsync()
+    private void Launch()
     {
         StartVisorService();
 

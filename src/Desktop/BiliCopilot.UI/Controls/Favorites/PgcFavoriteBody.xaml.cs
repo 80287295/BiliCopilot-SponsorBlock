@@ -2,6 +2,8 @@
 
 using BiliCopilot.UI.ViewModels.Components;
 
+using BiliCopilot.UI.Extensions;
+
 namespace BiliCopilot.UI.Controls.Favorites;
 
 /// <summary>
@@ -39,8 +41,6 @@ public sealed partial class PgcFavoriteBody : PgcFavoriteControlBase
         newValue.ListUpdated += OnSeasonListUpdatedAsync;
     }
 
-    private async void OnSeasonListUpdatedAsync(object? sender, EventArgs e)
-    {
-        await View.DelayCheckItemsAsync();
-    }
+    private void OnSeasonListUpdatedAsync(object? sender, EventArgs e)
+        => View.DelayCheckItemsAsync().SafeFireAndForget();
 }

@@ -4,7 +4,6 @@ using BiliCopilot.UI.ViewModels.Core;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using Microsoft.UI.Dispatching;
-using Microsoft.UI.Xaml.Media.Imaging;
 using Richasy.BiliKernel.Bili.Authorization;
 using Richasy.WinUIKernel.Share.Toolkits;
 using Richasy.WinUIKernel.Share.ViewModels;
@@ -65,10 +64,9 @@ public sealed partial class StartupPageViewModel : ViewModelBase
     /// </summary>
     /// <returns><see cref="Task"/>.</returns>
     [RelayCommand]
-    private async Task InitializeAsync(Image qrcodeImageControl)
+    private async Task InitializeAsync()
     {
         Version = this.Get<IAppToolkit>().GetPackageVersion();
-        QRCodeImage = qrcodeImageControl;
         await ReloadQRCodeAsync();
     }
 
@@ -160,28 +158,18 @@ public sealed partial class StartupPageViewModel : ViewModelBase
     {
         _logger.LogInformation("RenderQRCode 被调用，数据长度={Length} bytes", imageData?.Length ?? 0);
 
-        if (QRCodeImage is null)
+        if (imageData is null || imageData.Length == 0)
         {
-            _logger.LogError("QRCodeImage 控件为 null！二维码图片控件尚未初始化");
-            throw new InvalidOperationException("二维码图片控件尚未就绪，请初始化模块.");
+            _logger.LogError("二维码图片数据为空，忽略渲染请求");
+            return;
         }
 
-        var enqueued = _dispatcherQueue.TryEnqueue(async () =>
+        // MVVM 分层：ViewModel 不构造 XAML 图像对象，改为通知视图层自行解码渲染.
+        var enqueued = _dispatcherQueue.TryEnqueue(() =>
         {
-            try
-            {
-                _logger.LogInformation("DispatcherQueue 回调开始执行：设置 QR 图片源");
-                using var stream = new MemoryStream(imageData);
-                var bitmap = new BitmapImage();
-                await bitmap.SetSourceAsync(stream.AsRandomAccessStream()).AsTask();
-                QRCodeImage.Source = bitmap;
-                IsQRCodeLoading = false;
-                _logger.LogInformation("QR 图片已成功设置到控件");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "设置 QR 图片时出现异常");
-            }
+            _logger.LogInformation("通知视图层渲染二维码图片，数据长度={Length} bytes", imageData.Length);
+            IsQRCodeLoading = false;
+            QRCodeImageReady?.Invoke(this, imageData);
         });
 
         if (!enqueued)

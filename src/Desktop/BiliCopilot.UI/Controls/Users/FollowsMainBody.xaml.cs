@@ -1,5 +1,7 @@
 ﻿// Copyright (c) Bili Copilot. All rights reserved.
 
+using BiliCopilot.UI.Extensions;
+
 namespace BiliCopilot.UI.Controls.Users;
 
 /// <summary>
@@ -24,8 +26,6 @@ public sealed partial class FollowsMainBody : FollowsPageControlBase
         ViewModel.UserListUpdated -= OnUserListUpdatedAsync;
     }
 
-    private async void OnUserListUpdatedAsync(object? sender, EventArgs e)
-    {
-        await View.DelayCheckItemsAsync();
-    }
+    private void OnUserListUpdatedAsync(object? sender, EventArgs e)
+        => View.DelayCheckItemsAsync().SafeFireAndForget();
 }

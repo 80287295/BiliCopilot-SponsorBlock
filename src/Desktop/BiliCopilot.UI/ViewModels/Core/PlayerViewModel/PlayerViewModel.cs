@@ -82,6 +82,20 @@ public sealed partial class PlayerViewModel(DispatcherQueue queue, ILogger<Playe
             await Player.DisposeAsync();
         }
 
+        // 输入源事件退订（无条件执行，幂等：源为空时安全跳过，不依赖 Window 生命周期状态）.
+        if (_inputPointerSource != null)
+        {
+            _inputPointerSource.PointerReleased -= OnWindowPointerReleased;
+            _inputPointerSource = null;
+        }
+
+        if (_inputKeyboardSource != null)
+        {
+            _inputKeyboardSource.KeyDown -= OnWindowKeyDown;
+            _inputKeyboardSource.KeyUp -= OnWindowKeyUp;
+            _inputKeyboardSource = null;
+        }
+
         if (Window?.IsDisposed == false)
         {
             Window.SizeChanged -= OnWindowSizeChanged;
@@ -277,6 +291,8 @@ public sealed partial class PlayerViewModel(DispatcherQueue queue, ILogger<Playe
             var keyboardSource = InputKeyboardSource.GetForIsland(Window.XamlRoot?.ContentIsland);
             keyboardSource.KeyDown += OnWindowKeyDown;
             keyboardSource.KeyUp += OnWindowKeyUp;
+            _inputPointerSource = pointerSource;
+            _inputKeyboardSource = keyboardSource;
         }
 
         var hideMainWindowOnPlay = SettingsToolkit.ReadLocalSetting(SettingNames.HideMainWindowOnPlay, true);

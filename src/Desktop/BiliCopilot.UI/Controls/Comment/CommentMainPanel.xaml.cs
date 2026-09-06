@@ -4,6 +4,8 @@ using BiliCopilot.UI.ViewModels.Components;
 using Richasy.BiliKernel.Models;
 using Richasy.WinUIKernel.Share.Base;
 
+using BiliCopilot.UI.Extensions;
+
 namespace BiliCopilot.UI.Controls.Comment;
 
 /// <summary>
@@ -55,10 +57,8 @@ public sealed partial class CommentMainPanel : CommentMainPanelBase
         newValue.ListUpdated += OnCommentListUpdatedAsync;
     }
 
-    private async void OnCommentListUpdatedAsync(object? sender, EventArgs e)
-    {
-        await View.DelayCheckItemsAsync();
-    }
+    private void OnCommentListUpdatedAsync(object? sender, EventArgs e)
+        => View.DelayCheckItemsAsync().SafeFireAndForget();
 
     private void OnInitialized(object? sender, EventArgs e)
         => CheckSortType();
