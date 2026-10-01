@@ -2,10 +2,64 @@
 
 using System.Collections.Concurrent;
 using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using BiliCopilot.UI.Models.SponsorBlock;
 using BiliCopilot.UI.Services.Interfaces;
 
 namespace BiliCopilot.UI.Services;
+
+/// <summary>
+/// bsbsb.top（BilibiliSponsorBlock）API 的原始片段 DTO.
+/// <para>
+/// 实际响应为顶层平铺数组，元素示例：
+/// { "cid":"168885122", "category":"sponsor", "actionType":"skip", "segment":[300.019,600.014], "UUID":"...", "videoDuration":1801, "locked":1, "votes":1, "description":"" }
+/// </para>
+/// </summary>
+internal sealed class BsbsbSegmentDto
+{
+    /// <summary>
+    /// 分片时间区间 [开始秒, 结束秒].
+    /// </summary>
+    [JsonPropertyName("segment")]
+    public JsonElement? Segment { get; set; }
+
+    /// <summary>
+    /// 类别（小写字符串，如 sponsor / selfpromo / intro / poi_highlight）.
+    /// </summary>
+    [JsonPropertyName("category")]
+    public string? Category { get; set; }
+
+    /// <summary>
+    /// 动作类型（skip / mute / full / poi）.
+    /// </summary>
+    [JsonPropertyName("actionType")]
+    public string? ActionType { get; set; }
+
+    /// <summary>
+    /// 片段唯一标识.
+    /// </summary>
+    [JsonPropertyName("UUID")]
+    public string? Uuid { get; set; }
+
+    /// <summary>
+    /// 视频时长（秒）.
+    /// </summary>
+    [JsonPropertyName("videoDuration")]
+    public double? VideoDuration { get; set; }
+
+    /// <summary>
+    /// 是否被锁定.
+    /// </summary>
+    [JsonPropertyName("locked")]
+    public int? Locked { get; set; }
+
+    /// <summary>
+    /// 描述.
+    /// </summary>
+    [JsonPropertyName("description")]
+    public string? Description { get; set; }
+}
 
 /// <summary>
 /// SponsorBlock 服务实现（线程安全优化版）.
@@ -66,25 +120,25 @@ public sealed class SponsorBlockService : ISponsorBlockService, IDisposable
 
         // 慢速路径：从 API 获取数据
         List<SponsorSegment> segments;
-        
+
         try
         {
             // 调用 BilibiliSponsorBlock API
             var encodedVideoID = Uri.EscapeDataString(videoID);
             var url = $"{BASE_URL}/api/skipSegments?videoID={encodedVideoID}";
-            var responses = await _httpClient.GetFromJsonAsync<List<SponsorVideoResponse>>(url);
 
-            if (responses == null || responses.Count == 0)
+            // ✅ 修复：bsbsb.top 返回顶层平铺数组，每个元素形如
+            // { "cid": "...", "category": "sponsor", "actionType": "skip", "segment": [start, end], "UUID": "...", ... }
+            // 时间在 "segment" 数组里，而不是 {videoID, segments:[...]} 包装结构。
+            var dtos = await _httpClient.GetFromJsonAsync<List<BsbsbSegmentDto>>(url);
+
+            if (dtos == null || dtos.Count == 0)
             {
                 return new List<SponsorSegment>();
             }
 
-            // 合并所有片段
-            segments = responses?
-                .Where(r => r.Segments != null)
-                .SelectMany(r => r.Segments)
-                .OrderBy(s => s.StartTime) // 按开始时间排序（支持二分查找）
-                .ToList() ?? new List<SponsorSegment>();
+            // DTO → 领域模型（含 segment 数组展开、类别字符串解析、按开始时间排序）
+            segments = MapSegments(dtos);
         }
         catch (Exception ex)
         {
@@ -286,6 +340,77 @@ public sealed class SponsorBlockService : ISponsorBlockService, IDisposable
             
             System.Diagnostics.Debug.WriteLine($"Evicted cache entry for video {oldestKey} (Cache full)");
         }
+    }
+
+    /// <summary>
+    /// 将 bsbsb.top 的原始 DTO 映射为领域模型.
+    /// </summary>
+    /// <remarks>
+    /// 处理要点：
+    /// 1. 时间在 <c>segment: [start, end]</c> 数组里，展开为 StartTime / EndTime；
+    /// 2. category 是小写字符串（如 poi_highlight / music_offtopic），用忽略大小写的枚举解析；
+    /// 3. 过滤掉 end &lt;= start 的单点片段（如 poi_highlight 的 actionType=poi），避免无效跳过；
+    /// 4. 结果按 StartTime 升序排列，保证调用方二分查找的时间有序前提成立.
+    /// </remarks>
+    private static List<SponsorSegment> MapSegments(List<BsbsbSegmentDto> dtos)
+    {
+        var result = new List<SponsorSegment>(dtos.Count);
+
+        foreach (var dto in dtos)
+        {
+            if (dto.Segment is not { ValueKind: JsonValueKind.Array } segmentArray ||
+                segmentArray.GetArrayLength() < 2)
+            {
+                continue;
+            }
+
+            double start;
+            double end;
+            try
+            {
+                start = segmentArray[0].GetDouble();
+                end = segmentArray[1].GetDouble();
+            }
+            catch (FormatException)
+            {
+                continue;
+            }
+            catch (InvalidOperationException)
+            {
+                continue;
+            }
+
+            // 单点片段（poi 高亮等）不参与自动跳过
+            if (end <= start)
+            {
+                continue;
+            }
+
+            // 类别解析：忽略大小写，poi_highlight / music_offtopic 等带下划线的名称可正确匹配
+            if (!Enum.TryParse(dto.Category, ignoreCase: true, out SponsorCategory category))
+            {
+                category = SponsorCategory.Sponsor;
+            }
+
+            if (!Enum.TryParse(dto.ActionType, ignoreCase: true, out SponsorActionType action))
+            {
+                action = SponsorActionType.Skip;
+            }
+
+            result.Add(new SponsorSegment
+            {
+                StartTime = start,
+                EndTime = end,
+                UUID = dto.Uuid,
+                Category = category,
+                Action = action,
+                VideoDuration = dto.VideoDuration,
+                Locked = dto.Locked,
+                Description = dto.Description,
+            });
+        }
+
+        return result.OrderBy(s => s.StartTime).ToList();
     }
 
     // ========== IDisposable 实现 ==========

@@ -96,6 +96,13 @@ public sealed partial class PlayerViewModel : IDisposable
     /// </summary>
     private async Task LoadSponsorSegmentsAsync()
     {
+        // ✅ 修复：启动后静态缓存默认值为 true，从未从持久化设置恢复；
+        // 在每次加载视频片段时同步一次设置（每视频仅一次 I/O，不影响 500ms 节流的热路径）。
+        _cachedSponsorBlockEnabled = SettingsToolkit.ReadLocalSetting(SettingNames.SponsorBlockEnabled, true);
+        _cachedAutoSkipSponsor = SettingsToolkit.ReadLocalSetting(SettingNames.AutoSkipSponsor, true);
+        IsSponsorBlockEnabled = _cachedSponsorBlockEnabled;
+        AutoSkipSponsor = _cachedAutoSkipSponsor;
+
         // ✅ 优化：使用缓存值（零 I/O 开销）
         if (!CachedSponsorBlockEnabled)
         {
